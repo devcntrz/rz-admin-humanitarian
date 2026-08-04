@@ -1,0 +1,154 @@
+openapi: 3.0.3
+info:
+  title: RZ Admin — Blob upload & document URL insert
+  version: "1.0.0"
+  description: |
+    Alur: unggah file ke Vercel Blob (`POST /api/upload/blob`), lalu simpan URL ke dokumentasi
+    distribution atau site report lewat `documents_insert`.
+
+servers:
+  - url: https://{host}/api
+    variables:
+      host:
+        default: localhost:3000
+
+paths:
+  /upload/blob:
+    post:
+      summary: Upload file ke Vercel Blob
+      description: |
+        `multipart/form-data` dengan field `file`. Membutuhkan env `BLOB_READ_WRITE_TOKEN`.
+      operationId: uploadBlob
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        "200":
+          description: Berhasil; URL publik file
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  data:
+                    type: object
+                    properties:
+                      url:
+                        type: string
+                        format: uri
+                        description: URL file di Vercel Blob
+        "400":
+          description: Field file hilang
+        "503":
+          description: Token/blob belum dikonfigurasi
+        "500":
+          description: Gagal upload
+
+  /distributions/{id}/documents_insert:
+    post:
+      summary: Tambah dokumentasi distribution (hanya URL)
+      operationId: distributionDocumentsInsert
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [url]
+              properties:
+                url:
+                  type: string
+                  format: uri
+                  description: URL dari respons upload blob (alias boleh `file_url`)
+                file_url:
+                  type: string
+                  format: uri
+                  description: Alias untuk `url`
+                description:
+                  type: string
+                  nullable: true
+      responses:
+        "201":
+          description: Baris dokumentasi dibuat
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  message: { type: string }
+                  data:
+                    type: object
+                    properties:
+                      id: { type: integer }
+                      file_url: { type: string }
+                      description: { type: string, nullable: true }
+        "400":
+          description: JSON/URL tidak valid
+        "404":
+          description: Distribution tidak ditemukan
+        "500":
+          description: Gagal menyimpan
+
+  /site-report/{id}/documents_insert:
+    post:
+      summary: Tambah dokumentasi site report (hanya URL)
+      operationId: siteReportDocumentsInsert
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [url]
+              properties:
+                url:
+                  type: string
+                  format: uri
+                file_url:
+                  type: string
+                  format: uri
+                description:
+                  type: string
+                  nullable: true
+      responses:
+        "201":
+          description: Baris dokumentasi dibuat
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  message: { type: string }
+                  data:
+                    type: object
+                    properties:
+                      id: { type: integer }
+                      file_url: { type: string }
+                      description: { type: string, nullable: true }
+        "400":
+          description: JSON/URL tidak valid
+        "404":
+          description: Site report tidak ditemukan
+        "500":
+          description: Gagal menyimpan

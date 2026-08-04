@@ -1,0 +1,779 @@
+{
+  "info": {
+    "name": "RZ Humanitarian Admin API",
+    "description": "Collection untuk API RZ Humanitarian Admin dengan semua endpoint yang tersedia",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{jwt_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000/api",
+      "type": "string"
+    },
+    {
+      "key": "jwt_token",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Mobile Google SSO",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"idToken\": \"ey...\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/mobile/google",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "mobile", "google"]
+            }
+          }
+        },
+        {
+          "name": "Volunteer Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.token) {",
+                  "        pm.collectionVariables.set('jwt_token', response.token);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"volunteer@example.com\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/volunteer/login",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "volunteer", "login"]
+            }
+          }
+        },
+        {
+          "name": "Volunteer Logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/volunteer/logout",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "volunteer", "logout"]
+            }
+          }
+        },
+        {
+          "name": "Validate Token",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/volunteer/validate",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "volunteer", "validate"]
+            }
+          }
+        },
+        {
+          "name": "Change Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currentPassword\": \"password123\",\n  \"newPassword\": \"newPassword123!\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/volunteer/change-password",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "volunteer", "change-password"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Options",
+      "item": [
+        {
+          "name": "Get All Options",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/options",
+              "host": ["{{base_url}}"],
+              "path": ["options"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Volunteers",
+      "item": [
+        {
+          "name": "Get Volunteers",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/volunteers?q=",
+              "host": ["{{base_url}}"],
+              "path": ["volunteers"],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "",
+                  "description": "Search query (optional)"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Volunteer",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"full_name\": \"John Doe\",\n  \"email\": \"john@example.com\",\n  \"phone\": \"081234567890\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/volunteers",
+              "host": ["{{base_url}}"],
+              "path": ["volunteers"]
+            }
+          }
+        },
+        {
+          "name": "Update Volunteer",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": 1,\n  \"full_name\": \"John Doe Updated\",\n  \"email\": \"john.updated@example.com\",\n  \"phone\": \"081234567890\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/volunteers",
+              "host": ["{{base_url}}"],
+              "path": ["volunteers"]
+            }
+          }
+        },
+        {
+          "name": "Delete Volunteer",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{base_url}}/volunteers?id=1",
+              "host": ["{{base_url}}"],
+              "path": ["volunteers"],
+              "query": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Site Reports",
+      "item": [
+        {
+          "name": "Get Site Reports",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/site-reports?q=",
+              "host": ["{{base_url}}"],
+              "path": ["site-reports"],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "",
+                  "description": "Search query (optional)"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Site Reports by Volunteer",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/site-reports/volunteer/1",
+              "host": ["{{base_url}}"],
+              "path": ["site-reports", "volunteer", "1"]
+            }
+          }
+        },
+        {
+          "name": "Get Site Report Details",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/site-reports/1/details",
+              "host": ["{{base_url}}"],
+              "path": ["site-reports", "1", "details"]
+            }
+          }
+        },
+        {
+          "name": "Create Site Report",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"volunteer_id\": 1,\n  \"disaster_type_id\": 1,\n  \"province_id\": \"11\",\n  \"regency_id\": \"1101\",\n  \"district_id\": \"1101010\",\n  \"village_id\": \"1101010001\",\n  \"full_address\": \"Jl. Contoh No. 123\",\n  \"latitude\": -6.2088,\n  \"longitude\": 106.8456,\n  \"report_date\": \"2025-01-15\",\n  \"status\": \"draft\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/site-reports",
+              "host": ["{{base_url}}"],
+              "path": ["site-reports"]
+            }
+          }
+        },
+        {
+          "name": "Update Site Report",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": 1,\n  \"volunteer_id\": 1,\n  \"disaster_type_id\": 1,\n  \"status\": \"submitted\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/site-reports",
+              "host": ["{{base_url}}"],
+              "path": ["site-reports"]
+            }
+          }
+        },
+        {
+          "name": "Delete Site Report",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{base_url}}/site-reports/1",
+              "host": ["{{base_url}}"],
+              "path": ["site-reports", "1"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Site Report Details",
+      "item": [
+        {
+          "name": "Victims",
+          "item": [
+            {
+              "name": "Get Victims",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}/site-reports/1/victims",
+                  "host": ["{{base_url}}"],
+                  "path": ["site-reports", "1", "victims"]
+                }
+              }
+            },
+            {
+              "name": "Create Victim",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"category\": \"Luka Ringan\",\n  \"count\": 15,\n  \"description\": \"Korban dengan luka ringan\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/site-reports/1/victims",
+                  "host": ["{{base_url}}"],
+                  "path": ["site-reports", "1", "victims"]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Damages",
+          "item": [
+            {
+              "name": "Get Damages",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}/site-reports/1/damages",
+                  "host": ["{{base_url}}"],
+                  "path": ["site-reports", "1", "damages"]
+                }
+              }
+            },
+            {
+              "name": "Create Damage",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"infrastructure_type\": \"Rumah\",\n  \"damage_level\": \"Rusak Berat\",\n  \"description\": \"Rumah terendam banjir\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/site-reports/1/damages",
+                  "host": ["{{base_url}}"],
+                  "path": ["site-reports", "1", "damages"]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Refugees",
+          "item": [
+            {
+              "name": "Get Refugees",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}/site-reports/1/refugees",
+                  "host": ["{{base_url}}"],
+                  "path": ["site-reports", "1", "refugees"]
+                }
+              }
+            },
+            {
+              "name": "Create Refugee",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"location\": \"Aula Kelurahan\",\n  \"count\": 150,\n  \"condition_description\": \"Kondisi pengungsi baik\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/site-reports/1/refugees",
+                  "host": ["{{base_url}}"],
+                  "path": ["site-reports", "1", "refugees"]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Needs",
+          "item": [
+            {
+              "name": "Get Needs",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}/site-reports/1/needs",
+                  "host": ["{{base_url}}"],
+                  "path": ["site-reports", "1", "needs"]
+                }
+              }
+            },
+            {
+              "name": "Create Need",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"need_item\": \"Makanan Siap Saji\",\n  \"quantity\": 300,\n  \"unit\": \"porsi\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/site-reports/1/needs",
+                  "host": ["{{base_url}}"],
+                  "path": ["site-reports", "1", "needs"]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Documents",
+          "item": [
+            {
+              "name": "Get Documents",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}/site-reports/1/documents",
+                  "host": ["{{base_url}}"],
+                  "path": ["site-reports", "1", "documents"]
+                }
+              }
+            },
+            {
+              "name": "Upload Document",
+              "request": {
+                "method": "POST",
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "file",
+                      "type": "file",
+                      "src": []
+                    },
+                    {
+                      "key": "description",
+                      "value": "Dokumen laporan banjir",
+                      "type": "text"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{base_url}}/site-reports/1/documents",
+                  "host": ["{{base_url}}"],
+                  "path": ["site-reports", "1", "documents"]
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Distribution Reports",
+      "item": [
+        {
+          "name": "Get Distributions",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/distributions?q=",
+              "host": ["{{base_url}}"],
+              "path": ["distributions"],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "",
+                  "description": "Search query (optional)"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Distributions by Volunteer",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/distributions/volunteer/1",
+              "host": ["{{base_url}}"],
+              "path": ["distributions", "volunteer", "1"]
+            }
+          }
+        },
+        {
+          "name": "Get Distribution Details",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/distributions/1/details",
+              "host": ["{{base_url}}"],
+              "path": ["distributions", "1", "details"]
+            }
+          }
+        },
+        {
+          "name": "Create Distribution",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"spk_number\": \"SPK-001-BND\",\n  \"event_name\": \"Banjir Bandung Selatan\",\n  \"event_date\": \"2025-01-15\",\n  \"disaster_type_id\": 1,\n  \"pic_volunteer_id\": 1,\n  \"full_address\": \"Jl. Contoh No. 123\",\n  \"latitude\": -6.2088,\n  \"longitude\": 106.8456,\n  \"beneficiary_count\": 150,\n  \"volunteer_count\": 10,\n  \"province_id\": \"11\",\n  \"regency_id\": \"1101\",\n  \"district_id\": \"1101010\",\n  \"village_id\": \"1101010001\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/distributions",
+              "host": ["{{base_url}}"],
+              "path": ["distributions"]
+            }
+          }
+        },
+        {
+          "name": "Update Distribution",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": 1,\n  \"event_name\": \"Banjir Bandung Selatan Updated\",\n  \"beneficiary_count\": 200\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/distributions",
+              "host": ["{{base_url}}"],
+              "path": ["distributions"]
+            }
+          }
+        },
+        {
+          "name": "Delete Distribution",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{base_url}}/distributions/1",
+              "host": ["{{base_url}}"],
+              "path": ["distributions", "1"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Master Config",
+      "item": [
+        {
+          "name": "Provinces",
+          "item": [
+            {
+              "name": "Get Provinces",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}/config/provinces?q=",
+                  "host": ["{{base_url}}"],
+                  "path": ["config", "provinces"],
+                  "query": [
+                    {
+                      "key": "q",
+                      "value": "",
+                      "description": "Search query (optional)"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Create Province",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"id\": \"99\",\n  \"name\": \"Provinsi Baru\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/config/provinces",
+                  "host": ["{{base_url}}"],
+                  "path": ["config", "provinces"]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Disaster Types",
+          "item": [
+            {
+              "name": "Get Disaster Types",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}/config/disaster-types?q=",
+                  "host": ["{{base_url}}"],
+                  "path": ["config", "disaster-types"],
+                  "query": [
+                    {
+                      "key": "q",
+                      "value": "",
+                      "description": "Search query (optional)"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Create Disaster Type",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Gempa Bumi\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/config/disaster-types",
+                  "host": ["{{base_url}}"],
+                  "path": ["config", "disaster-types"]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admins",
+          "item": [
+            {
+              "name": "Get Admins",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}/config/admins?q=",
+                  "host": ["{{base_url}}"],
+                  "path": ["config", "admins"],
+                  "query": [
+                    {
+                      "key": "q",
+                      "value": "",
+                      "description": "Search query (optional)"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Create Admin",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"full_name\": \"Admin Baru\",\n  \"email\": \"admin@example.com\",\n  \"role\": \"admin\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/config/admins",
+                  "host": ["{{base_url}}"],
+                  "path": ["config", "admins"]
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+
