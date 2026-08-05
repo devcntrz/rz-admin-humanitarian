@@ -1,15 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { sql } from '@/lib/db'
 import { withCors } from '@/lib/cors'
-
-function normalizeIncidentAt(value: unknown): string | null {
-  if (!value || typeof value !== 'string') return null
-  const trimmed = value.trim()
-  if (!trimmed) return null
-  const date = new Date(trimmed)
-  if (Number.isNaN(date.getTime())) return null
-  return date.toISOString()
-}
+import { normalizeIncidentAt, todayJakartaDate } from '@/lib/incident-at'
 
 export async function GET(
   request: NextRequest,
@@ -123,7 +115,7 @@ export async function PUT(
           volunteer_id = ${volunteer_id || null},
           disaster_type_id = ${disaster_type_id || null},
           village_id = ${village_id || null},
-          report_date = ${report_date || new Date().toISOString().slice(0, 10)},
+          report_date = ${report_date || todayJakartaDate()},
           status = ${status || 'draft'},
           full_address = ${full_address || null},
           latitude = ${latitude || null},

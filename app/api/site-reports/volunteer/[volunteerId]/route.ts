@@ -10,7 +10,7 @@ export async function GET(
     try {
       const resolvedParams = await params
       const volunteerId = parseInt(resolvedParams.volunteerId)
-      
+
       if (isNaN(volunteerId)) {
         return NextResponse.json(
           { success: false, error: 'Invalid volunteer ID format' },
@@ -28,11 +28,11 @@ export async function GET(
 
       // Cek apakah volunteer ada
       const volunteer = await sql`
-        SELECT id, full_name, email 
-        FROM volunteers 
+        SELECT id, full_name, email
+        FROM volunteers
         WHERE id = ${volunteerId}
       `
-      
+
       if (volunteer.length === 0) {
         return NextResponse.json(
           { success: false, error: 'Volunteer not found' },
@@ -51,7 +51,7 @@ export async function GET(
 
       // Ambil page data
       const siteReports = await sql`
-        SELECT 
+        SELECT
           r.id,
           to_char(r.report_date, 'YYYY-MM-DD') as report_date,
           r.status,
@@ -60,6 +60,15 @@ export async function GET(
           r.latitude,
           r.longitude,
           r.created_at,
+          r.chronology,
+          r.disaster_status,
+          r.latest_condition,
+          r.information_source,
+          r.field_coordinator_id,
+          to_char(r.incident_at AT TIME ZONE 'Asia/Jakarta', 'YYYY-MM-DD"T"HH24:MI') as incident_at_local,
+          to_char(r.incident_at AT TIME ZONE 'Asia/Jakarta', 'YYYY-MM-DD HH24:MI') as incident_at,
+          fc.full_name as field_coordinator_name,
+          fc.phone_number as field_coordinator_phone,
           d.name as disaster_name,
           vill.name as village_name,
           dist.name as district_name,
@@ -68,9 +77,10 @@ export async function GET(
         FROM site_reports r
         LEFT JOIN disaster_types d ON d.id = r.disaster_type_id
         LEFT JOIN villages vill ON vill.id = r.village_id
-        LEFT JOIN districts dist ON dist.id = vill.district_id
-        LEFT JOIN regencies reg ON reg.id = dist.regency_id
-        LEFT JOIN provinces prov ON prov.id = reg.province_id
+        LEFT JOIN districts dist ON dist.id = COALESCE(r.district_id, vill.district_id)
+        LEFT JOIN regencies reg ON reg.id = COALESCE(r.regency_id, dist.regency_id)
+        LEFT JOIN provinces prov ON prov.id = COALESCE(r.province_id, reg.province_id)
+        LEFT JOIN field_coordinators fc ON fc.id = r.field_coordinator_id
         WHERE r.volunteer_id = ${volunteerId}
         ORDER BY r.created_at DESC
         LIMIT ${limit}
@@ -90,9 +100,9 @@ export async function GET(
             hasPrev: page > 1,
             hasNext: page < totalPages,
             nextPage: page < totalPages ? page + 1 : null,
-            prevPage: page > 1 ? page - 1 : null
-          }
-        }
+            prevPage: page > 1 ? page - 1 : null,
+          },
+        },
       })
     } catch (error) {
       console.error('Error fetching situation reports by volunteer:', error)
@@ -105,6 +115,6 @@ export async function GET(
 }
 
 // Handle OPTIONS requests for CORS preflight
-export const OPTIONS = withCors(async (request: NextRequest) => {
+export const OPTIONS = withCors(async (_request: NextRequest) => {
   return new NextResponse(null, { status: 200 })
 })

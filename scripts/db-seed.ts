@@ -7,6 +7,7 @@
  */
 import { readFile } from "node:fs/promises"
 import { resolve } from "node:path"
+import type { Pool, PoolClient } from "pg"
 import { createDb } from "../db/client"
 import "../db/env"
 
@@ -61,10 +62,13 @@ async function main() {
   const seedSql = await readFile(seedPath, "utf8")
   const statements = splitSqlStatements(seedSql)
 
-  const { pool } = createDb()
-  const client = await pool.connect()
+  let pool: Pool | undefined
+  let client: PoolClient | undefined
 
   try {
+    ;({ pool } = createDb())
+    client = await pool.connect()
+
     console.log("Truncating tables...")
     await client.query(
       `TRUNCATE TABLE ${TABLES.map((t) => `public.${t}`).join(", ")} RESTART IDENTITY CASCADE`,
@@ -101,8 +105,8 @@ async function main() {
 
     console.log(`Seed complete (${executed} statements).`)
   } finally {
-    client.release()
-    await pool.end()
+    client?.release()
+    await pool?.end()
   }
 }
 

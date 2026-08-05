@@ -5,40 +5,46 @@ import { withCors } from '@/lib/cors'
 export async function GET(request: NextRequest) {
   return withCors(async (req) => {
     try {
-      const [volunteers, disasterTypes, villages, provinces, regencies, districts] = await Promise.all([
-        sql<{ id: number; full_name: string }>`
-          SELECT id, full_name 
-          FROM volunteers 
-          ORDER BY full_name ASC 
-          LIMIT 200
-        `,
-        sql<{ id: number; name: string }>`
-          SELECT id, name 
-          FROM disaster_types 
-          ORDER BY name ASC
-        `,
-        sql<{ id: string; name: string }>`
-          SELECT id, name 
-          FROM villages 
-          ORDER BY name ASC 
-          LIMIT 500
-        `,
-        sql<{ id: string; name: string }>`
-          SELECT id, name 
-          FROM provinces 
-          ORDER BY name ASC
-        `,
-        sql<{ id: string; name: string; province_id: string }>`
-          SELECT id, name, province_id 
-          FROM regencies 
-          ORDER BY name ASC
-        `,
-        sql<{ id: string; name: string; regency_id: string }>`
-          SELECT id, name, regency_id 
-          FROM districts 
-          ORDER BY name ASC
-        `
-      ])
+      const [volunteers, disasterTypes, villages, provinces, regencies, districts, fieldCoordinators] =
+        await Promise.all([
+          sql<{ id: number; full_name: string }>`
+            SELECT id, full_name 
+            FROM volunteers 
+            ORDER BY full_name ASC 
+            LIMIT 200
+          `,
+          sql<{ id: number; name: string }>`
+            SELECT id, name 
+            FROM disaster_types 
+            ORDER BY name ASC
+          `,
+          sql<{ id: string; name: string }>`
+            SELECT id, name 
+            FROM villages 
+            ORDER BY name ASC 
+            LIMIT 500
+          `,
+          sql<{ id: string; name: string }>`
+            SELECT id, name 
+            FROM provinces 
+            ORDER BY name ASC
+          `,
+          sql<{ id: string; name: string; province_id: string }>`
+            SELECT id, name, province_id 
+            FROM regencies 
+            ORDER BY name ASC
+          `,
+          sql<{ id: string; name: string; regency_id: string }>`
+            SELECT id, name, regency_id 
+            FROM districts 
+            ORDER BY name ASC
+          `,
+          sql<{ id: number; full_name: string; phone_number: string | null }>`
+            SELECT id, full_name, phone_number
+            FROM field_coordinators
+            ORDER BY full_name ASC
+          `,
+        ])
       
       return NextResponse.json({
         success: true,
@@ -48,7 +54,8 @@ export async function GET(request: NextRequest) {
           villages,
           provinces,
           regencies,
-          districts
+          districts,
+          fieldCoordinators,
         }
       })
     } catch (error) {

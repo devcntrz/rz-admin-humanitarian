@@ -6,11 +6,11 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  return withCors(async (req) => {
+  return withCors(async (_req) => {
     try {
       const resolvedParams = await params
       const siteReportId = parseInt(resolvedParams.id)
-      
+
       if (isNaN(siteReportId)) {
         return NextResponse.json(
           { success: false, error: 'Invalid site report ID format' },
@@ -20,9 +20,11 @@ export async function GET(
 
       // Ambil data utama site report
       const siteReport = await sql`
-        SELECT 
+        SELECT
           r.*,
           to_char(r.report_date, 'YYYY-MM-DD') as report_date,
+          to_char(r.incident_at AT TIME ZONE 'Asia/Jakarta', 'YYYY-MM-DD"T"HH24:MI') as incident_at_local,
+          to_char(r.incident_at AT TIME ZONE 'Asia/Jakarta', 'YYYY-MM-DD HH24:MI') as incident_at_display,
           v.full_name as volunteer_name,
           v.email as volunteer_email,
           v.phone_number as volunteer_phone,
@@ -30,14 +32,17 @@ export async function GET(
           vill.name as village_name,
           dist.name as district_name,
           reg.name as regency_name,
-          prov.name as province_name
+          prov.name as province_name,
+          fc.full_name as field_coordinator_name,
+          fc.phone_number as field_coordinator_phone
         FROM site_reports r
         LEFT JOIN volunteers v ON v.id = r.volunteer_id
         LEFT JOIN disaster_types d ON d.id = r.disaster_type_id
         LEFT JOIN villages vill ON vill.id = r.village_id
-        LEFT JOIN districts dist ON dist.id = vill.district_id
-        LEFT JOIN regencies reg ON reg.id = dist.regency_id
-        LEFT JOIN provinces prov ON prov.id = reg.province_id
+        LEFT JOIN districts dist ON dist.id = COALESCE(r.district_id, vill.district_id)
+        LEFT JOIN regencies reg ON reg.id = COALESCE(r.regency_id, dist.regency_id)
+        LEFT JOIN provinces prov ON prov.id = COALESCE(r.province_id, reg.province_id)
+        LEFT JOIN field_coordinators fc ON fc.id = r.field_coordinator_id
         WHERE r.id = ${siteReportId}
       `
 
@@ -51,55 +56,55 @@ export async function GET(
       // Ambil semua detail dalam satu query menggunakan UNION
       const details = await sql`
         -- Victims
-        SELECT 
+        SELECT
           'victim' as type,
           id,
           victim_type as name,
           quantity as count,
           NULL as unit,
           description
-        FROM sr_victim_counts 
+        FROM sr_victim_counts
         WHERE site_report_id = ${siteReportId}
-        
+
         UNION ALL
-        
+
         -- Damages
-        SELECT 
+        SELECT
           'damage' as type,
           id,
           damage_type as name,
           quantity as count,
           unit,
           description
-        FROM sr_infrastructure_damages 
+        FROM sr_infrastructure_damages
         WHERE site_report_id = ${siteReportId}
-        
+
         UNION ALL
-        
+
         -- Refugees
-        SELECT 
+        SELECT
           'refugee' as type,
           id,
           location_name as name,
           number_of_refugees as count,
           NULL as unit,
           description as condition_description
-        FROM sr_refugee_infos 
+        FROM sr_refugee_infos
         WHERE site_report_id = ${siteReportId}
-        
+
         UNION ALL
-        
+
         -- Needs
-        SELECT 
+        SELECT
           'need' as type,
           id,
           need_item as name,
           quantity as count,
           unit,
           description
-        FROM sr_urgent_needs 
+        FROM sr_urgent_needs
         WHERE site_report_id = ${siteReportId}
-        
+
         ORDER BY type, id
       `
 
@@ -113,10 +118,10 @@ export async function GET(
 
       // Group details berdasarkan type
       const groupedDetails = {
-        victims: details.filter(d => d.type === 'victim'),
-        damages: details.filter(d => d.type === 'damage'),
-        refugees: details.filter(d => d.type === 'refugee'),
-        needs: details.filter(d => d.type === 'need')
+        victims: details.filter((d) => d.type === 'victim'),
+        damages: details.filter((d) => d.type === 'damage'),
+        refugees: details.filter((d) => d.type === 'refugee'),
+        needs: details.filter((d) => d.type === 'need'),
       }
 
       return NextResponse.json({
@@ -124,8 +129,8 @@ export async function GET(
         data: {
           siteReport: siteReport[0],
           details: groupedDetails,
-          documents: documents
-        }
+          documents: documents,
+        },
       })
     } catch (error) {
       console.error('Error fetching site report details:', error)
@@ -138,6 +143,6 @@ export async function GET(
 }
 
 // Handle OPTIONS requests for CORS preflight
-export const OPTIONS = withCors(async (request: NextRequest) => {
+export const OPTIONS = withCors(async (_request: NextRequest) => {
   return new NextResponse(null, { status: 200 })
 })
