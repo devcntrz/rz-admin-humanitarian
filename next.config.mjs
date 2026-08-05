@@ -10,10 +10,10 @@ const nextConfig = {
     unoptimized: true,
   },
   output: "standalone",
-  // Keep pdfkit outside the Next bundle so AFM font files resolve from node_modules
-  serverExternalPackages: ["pdfkit", "fontkit", "linebreak", "png-js"],
+  // Bundle local font files with PDF API routes (real paths — avoids pnpm symlink deploy errors)
   outputFileTracingIncludes: {
-    "/api/**/*": ["./node_modules/pdfkit/js/data/**/*"],
+    "/api/site-reports/[id]/pdf": ["./assets/fonts/**/*"],
+    "/api/distributions/[id]/pdf": ["./assets/fonts/**/*"],
   },
 };
 

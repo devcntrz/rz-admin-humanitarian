@@ -1,3 +1,4 @@
+import path from "path"
 import PDFDocument from "pdfkit"
 import { formatDateId, formatIncidentAtId } from "@/lib/format-report"
 
@@ -5,13 +6,23 @@ const ORANGE = "#ff6600"
 const TEXT = "#222222"
 const MUTED = "#555555"
 
+// Local TTF fonts — avoids pdfkit AFM files from pnpm symlinks (breaks Vercel packaging)
+const FONT_REG = path.join(process.cwd(), "assets/fonts/Geist-Regular.ttf")
+const FONT_BOLD = path.join(process.cwd(), "assets/fonts/Geist-Bold.ttf")
+const FONT = "Body"
+const FONT_BOLD_NAME = "BodyBold"
+
 function createDoc(info: { Title: string; Author: string }) {
-  // pdfkit is listed in serverExternalPackages so standard fonts resolve from node_modules
-  return new PDFDocument({
+  const doc = new PDFDocument({
     margin: 48,
     size: "A4",
     info,
+    font: FONT_REG,
   })
+  doc.registerFont(FONT, FONT_REG)
+  doc.registerFont(FONT_BOLD_NAME, FONT_BOLD)
+  doc.font(FONT)
+  return doc
 }
 
 function collectPdf(doc: PDFKit.PDFDocument): Promise<Buffer> {
@@ -30,9 +41,9 @@ function sectionTitle(doc: PDFKit.PDFDocument, title: string) {
   doc
     .fillColor(ORANGE)
     .fontSize(11)
-    .font("Helvetica-Bold")
+    .font("BodyBold")
     .text(title.toUpperCase(), doc.page.margins.left + 10, y)
-  doc.fillColor(TEXT).font("Helvetica").fontSize(10)
+  doc.fillColor(TEXT).font("Body").fontSize(10)
   doc.moveDown(0.3)
 }
 
@@ -46,25 +57,25 @@ function drawHeader(
   doc: PDFKit.PDFDocument,
   opts: { reportLabel: string; reportDate: string; title: string; subtitle?: string }
 ) {
-  doc.fillColor(ORANGE).fontSize(16).font("Helvetica-Bold").text("RUMAH ZAKAT", { continued: false })
-  doc.fillColor(MUTED).fontSize(8).font("Helvetica").text("www.rumahzakat.org")
+  doc.fillColor(ORANGE).fontSize(16).font("BodyBold").text("RUMAH ZAKAT", { continued: false })
+  doc.fillColor(MUTED).fontSize(8).font("Body").text("www.rumahzakat.org")
 
   doc
     .fillColor(TEXT)
     .fontSize(10)
-    .font("Helvetica-Bold")
+    .font("BodyBold")
     .text(opts.reportLabel, { align: "right" })
-  doc.font("Helvetica").fontSize(9).text(opts.reportDate, { align: "right" })
+  doc.font("Body").fontSize(9).text(opts.reportDate, { align: "right" })
 
   doc.moveDown(0.4)
   doc.moveTo(doc.page.margins.left, doc.y).lineTo(doc.page.width - doc.page.margins.right, doc.y).strokeColor(ORANGE).lineWidth(2).stroke()
   doc.moveDown(0.5)
 
-  doc.fillColor(ORANGE).fontSize(16).font("Helvetica-Bold").text(opts.title.toUpperCase())
+  doc.fillColor(ORANGE).fontSize(16).font("BodyBold").text(opts.title.toUpperCase())
   if (opts.subtitle) {
-    doc.fillColor(MUTED).fontSize(9).font("Helvetica").text(opts.subtitle)
+    doc.fillColor(MUTED).fontSize(9).font("Body").text(opts.subtitle)
   }
-  doc.fillColor(TEXT).font("Helvetica").fontSize(10)
+  doc.fillColor(TEXT).font("Body").fontSize(10)
   doc.moveDown(0.3)
 }
 
@@ -117,7 +128,7 @@ async function drawLocationMap(
     .fillColor(ORANGE)
     .fontSize(8)
     .text("Buka di OpenStreetMap", { link: osmLink, underline: true })
-  doc.fillColor(TEXT).font("Helvetica").fontSize(10)
+  doc.fillColor(TEXT).font("Body").fontSize(10)
 
   const buf = await fetchStaticMapBuffer(lat, lng)
   if (!buf) {
@@ -139,7 +150,7 @@ async function drawLocationMap(
   } catch {
     doc.fillColor(MUTED).fontSize(9).text("Peta tidak dapat ditampilkan.")
   }
-  doc.fillColor(TEXT).font("Helvetica").fontSize(10)
+  doc.fillColor(TEXT).font("Body").fontSize(10)
 }
 
 function isImageUrl(url: string, contentType?: string | null) {
@@ -201,12 +212,12 @@ async function drawDocumentation(doc: PDFKit.PDFDocument, documents: DocItem[]) 
     } else {
       doc
         .fillColor(TEXT)
-        .font("Helvetica-Bold")
+        .font("BodyBold")
         .fontSize(9)
         .text(`Dokumentasi ${i + 1}`, x, rowY, { width: imgWidth })
       doc
         .fillColor(MUTED)
-        .font("Helvetica")
+        .font("Body")
         .fontSize(8)
         .text(item.description || "File dokumentasi", x, rowY + 14, { width: imgWidth })
       doc
@@ -217,7 +228,7 @@ async function drawDocumentation(doc: PDFKit.PDFDocument, documents: DocItem[]) 
     if (item.description && buf) {
       doc
         .fillColor(MUTED)
-        .font("Helvetica")
+        .font("Body")
         .fontSize(8)
         .text(item.description, x, rowY + imgHeight + 4, { width: imgWidth, ellipsis: true })
     }
@@ -233,7 +244,7 @@ async function drawDocumentation(doc: PDFKit.PDFDocument, documents: DocItem[]) 
     doc.y = rowY + imgHeight + 22
   }
 
-  doc.fillColor(TEXT).font("Helvetica").fontSize(10)
+  doc.fillColor(TEXT).font("Body").fontSize(10)
 }
 
 function drawTable(
@@ -248,7 +259,7 @@ function drawTable(
   const rowH = 16
 
   doc.rect(startX, y, colWidths.reduce((a, b) => a + b, 0), rowH).fill("#fff3e6")
-  doc.fillColor(ORANGE).font("Helvetica-Bold").fontSize(8)
+  doc.fillColor(ORANGE).font("BodyBold").fontSize(8)
   let x = startX
   headers.forEach((h, i) => {
     doc.text(h, x + 3, y + 4, { width: colWidths[i] - 6, ellipsis: true })
@@ -256,7 +267,7 @@ function drawTable(
   })
   y += rowH
 
-  doc.fillColor(TEXT).font("Helvetica").fontSize(8)
+  doc.fillColor(TEXT).font("Body").fontSize(8)
   rows.forEach((row) => {
     if (y + rowH > doc.page.height - doc.page.margins.bottom) {
       doc.addPage()
@@ -275,7 +286,7 @@ function drawTable(
     y += rowH
   })
   doc.y = y + 6
-  doc.fillColor(TEXT).font("Helvetica").fontSize(10)
+  doc.fillColor(TEXT).font("Body").fontSize(10)
 }
 
 export type SitrepPdfData = {

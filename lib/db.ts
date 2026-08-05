@@ -1,9 +1,13 @@
 // Usage: const rows = await sql`SELECT * FROM volunteers WHERE id = ${id}`
 
 import "server-only"
-import type { QueryResult } from "pg"
+import type { QueryResultRow } from "pg"
+
+type QueryFn = <T = any>(text: string, params?: any[]) => Promise<T[]>
+export type SQLTag = <T = any>(strings: TemplateStringsArray, ...values: any[]) => Promise<T[]>
 
 let cachedSql: SQLTag | null = null
+let cachedQuery: QueryFn | null = null
 
 function toPgQuery(strings: TemplateStringsArray, values: any[]) {
   // Compose "text" with $1 placeholders and values[]
@@ -21,9 +25,12 @@ function toPgQuery(strings: TemplateStringsArray, values: any[]) {
   return { text, params }
 }
 
-export type SQLTag = <T = any>(strings: TemplateStringsArray, ...values: any[]) => Promise<T[]>
+function toPgPlaceholders(text: string) {
+  let i = 0
+  return text.replace(/\?/g, () => `$${++i}`)
+}
 
-async function initSql(): Promise<SQLTag> {
+async function initDb() {
   const client = (process.env.DB_CLIENT || "neon").toLowerCase()
   const conn = process.env.DATABASE_URL
   if (!conn) throw new Error("Missing DATABASE_URL")
@@ -31,20 +38,43 @@ async function initSql(): Promise<SQLTag> {
   if (client === "neon") {
     const { neon } = await import("@neondatabase/serverless")
     const neonSql = neon(conn)
-    return neonSql as unknown as SQLTag
+    const sqlTag = neonSql as unknown as SQLTag
+    const queryFn: QueryFn = async <T = any>(text: string, params: any[] = []) => {
+      const rows = await neonSql.query(toPgPlaceholders(text), params)
+      return rows as T[]
+    }
+    return { sqlTag, queryFn }
   }
 
   const { Pool } = await import("pg")
   const pool = new Pool({ connectionString: conn })
-  const tag: SQLTag = (async <T = any>(strings: TemplateStringsArray, ...values: any[]) => {
+  const sqlTag: SQLTag = (async <T = any>(strings: TemplateStringsArray, ...values: any[]) => {
     const { text, params } = toPgQuery(strings, values)
-    const res: QueryResult<T> = await pool.query(text, params)
-    return res.rows
+    const res = await pool.query<QueryResultRow>(text, params)
+    return res.rows as T[]
   }) as SQLTag
-  return tag
+  const queryFn: QueryFn = async <T = any>(text: string, params: any[] = []) => {
+    const res = await pool.query<QueryResultRow>(toPgPlaceholders(text), params)
+    return res.rows as T[]
+  }
+  return { sqlTag, queryFn }
+}
+
+async function ensureDb() {
+  if (!cachedSql || !cachedQuery) {
+    const db = await initDb()
+    cachedSql = db.sqlTag
+    cachedQuery = db.queryFn
+  }
 }
 
 export const sql: SQLTag = async function sql(strings: TemplateStringsArray, ...values: any[]) {
-  if (!cachedSql) cachedSql = await initSql()
-  return cachedSql(strings, ...values)
+  await ensureDb()
+  return cachedSql!(strings, ...values)
 } as unknown as SQLTag
+
+/** Parameterized query helper (`?` placeholders → Postgres `$1`, `$2`, …). */
+export async function query<T = any>(text: string, params: any[] = []): Promise<T[]> {
+  await ensureDb()
+  return cachedQuery!<T>(text, params)
+}
