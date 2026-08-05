@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -12,17 +12,22 @@ import {
   ModalFooter, 
   ModalTrigger 
 } from "@/components/ui/modal"
+import { ElegantPagination } from "@/components/ui/elegant-pagination"
 import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination"
+  DataTable,
+  DataTableBody,
+  DataTableEmpty,
+  DataTableHead,
+  DataTableHeadRow,
+  DataTableRow,
+  DataTableShell,
+  DataTableTd,
+  DataTableTh,
+} from "@/components/ui/data-table"
 import { apiClient } from "@/lib/api"
-import { Edit, Trash2, UserPlus, Eye, EyeOff } from "lucide-react"
+import { Edit, Trash2, UserPlus, Eye, EyeOff, Upload, Download } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import * as XLSX from "xlsx"
 
 type Volunteer = {
   id: number
@@ -64,24 +69,33 @@ export default function VolunteersPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [totalItems, setTotalItems] = useState(0)
+  const [itemsPerPage, setItemsPerPage] = useState(10)
+  const [allVolunteers, setAllVolunteers] = useState<Volunteer[]>([])
   const [showPassword, setShowPassword] = useState(false)
-  const itemsPerPage = 10
+  const [importing, setImporting] = useState(false)
+  const [importResult, setImportResult] = useState<{
+    success_count: number
+    failed_count: number
+    errors: { row: number; email?: string; reason: string }[]
+  } | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const loadData = async (query?: string, page: number = 1) => {
+  const paginateRows = (data: Volunteer[], page: number, pageSize: number) => {
+    setAllVolunteers(data)
+    setTotalItems(data.length)
+    setTotalPages(Math.max(1, Math.ceil(data.length / pageSize) || 1))
+    const startIndex = (page - 1) * pageSize
+    setVolunteers(data.slice(startIndex, startIndex + pageSize))
+    setCurrentPage(page)
+  }
+
+  const loadData = async (query?: string, page: number = 1, pageSize: number = itemsPerPage) => {
     try {
       setLoading(true)
       const response = await apiClient.getVolunteers(query)
       
       if (response.success && response.data) {
-        const allVolunteers = response.data
-        const startIndex = (page - 1) * itemsPerPage
-        const endIndex = startIndex + itemsPerPage
-        const paginatedVolunteers = allVolunteers.slice(startIndex, endIndex)
-        
-        setVolunteers(paginatedVolunteers)
-        setTotalItems(allVolunteers.length)
-        setTotalPages(Math.ceil(allVolunteers.length / itemsPerPage))
-        setCurrentPage(page)
+        paginateRows(response.data, page, pageSize)
       }
     } catch (error) {
       console.error('Error loading data:', error)
@@ -106,8 +120,12 @@ export default function VolunteersPage() {
   }
 
   const handlePageChange = (page: number) => {
-    setCurrentPage(page)
-    loadData(searchQuery, page)
+    paginateRows(allVolunteers, page, itemsPerPage)
+  }
+
+  const handlePageSizeChange = (size: number) => {
+    setItemsPerPage(size)
+    paginateRows(allVolunteers, 1, size)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -226,6 +244,55 @@ export default function VolunteersPage() {
     setIsModalOpen(true)
   }
 
+  const handleDownloadTemplate = () => {
+    const ws = XLSX.utils.json_to_sheet([
+      {
+        full_name: "Contoh Nama",
+        email: "contoh@email.com",
+        password: "Password123!",
+        phone: "081234567890",
+      },
+    ])
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, "Volunteers")
+    XLSX.writeFile(wb, "volunteer-import-template.xlsx")
+  }
+
+  const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    try {
+      setImporting(true)
+      setImportResult(null)
+      const response = await apiClient.importVolunteers(file)
+      if (response.success && response.data) {
+        setImportResult(response.data)
+        toast({
+          title: "Import selesai",
+          description: `${response.data.success_count} berhasil, ${response.data.failed_count} gagal.`,
+        })
+        loadData(searchQuery, currentPage)
+      } else {
+        toast({
+          title: "Error",
+          description: response.error || "Gagal mengimpor volunteers.",
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      console.error("Error importing volunteers:", error)
+      toast({
+        title: "Error",
+        description: "Terjadi kesalahan saat mengimpor volunteers.",
+        variant: "destructive",
+      })
+    } finally {
+      setImporting(false)
+      if (fileInputRef.current) fileInputRef.current.value = ""
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -238,16 +305,58 @@ export default function VolunteersPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
+    <div className="space-y-6 min-w-0 max-w-full">
+      <Card className="min-w-0 max-w-full overflow-hidden">
+        <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-3">
           <CardTitle className="text-balance">Volunteers</CardTitle>
-          <Button onClick={openCreateModal}>
-            <UserPlus className="h-4 w-4 mr-2" />
-            Tambah Volunteer
-          </Button>
+          <div className="flex gap-2 flex-wrap">
+            <Button variant="outline" onClick={handleDownloadTemplate}>
+              <Download className="h-4 w-4 mr-2" />
+              Template Excel
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={importing}
+            >
+              <Upload className="h-4 w-4 mr-2" />
+              {importing ? "Mengimpor..." : "Import Excel"}
+            </Button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".xlsx,.xls,.csv"
+              className="hidden"
+              onChange={handleImportFile}
+            />
+            <Button onClick={openCreateModal}>
+              <UserPlus className="h-4 w-4 mr-2" />
+              Tambah Volunteer
+            </Button>
+          </div>
         </CardHeader>
         <CardContent className="space-y-3">
+          {importResult && (
+            <div className="rounded-md border p-3 text-sm space-y-2 bg-muted/30">
+              <p>
+                Hasil import: <strong>{importResult.success_count}</strong> berhasil,{" "}
+                <strong>{importResult.failed_count}</strong> gagal.
+              </p>
+              {importResult.errors.length > 0 && (
+                <ul className="list-disc pl-5 space-y-1 max-h-40 overflow-y-auto">
+                  {importResult.errors.slice(0, 20).map((err, idx) => (
+                    <li key={`${err.row}-${idx}`}>
+                      Baris {err.row}
+                      {err.email ? ` (${err.email})` : ""}: {err.reason}
+                    </li>
+                  ))}
+                  {importResult.errors.length > 20 && (
+                    <li>...dan {importResult.errors.length - 20} error lainnya</li>
+                  )}
+                </ul>
+              )}
+            </div>
+          )}
           <form onSubmit={handleSearch} className="flex gap-2">
             <Input 
               value={searchQuery}
@@ -258,93 +367,51 @@ export default function VolunteersPage() {
               Cari
             </Button>
           </form>
-          <div className="overflow-x-auto">
-            <table className="min-w-[600px] w-full border border-border rounded-md">
-              <thead>
-                <tr className="bg-muted/50">
-                  <th className="text-left p-3 font-medium">ID</th>
-                  <th className="text-left p-3 font-medium">Nama</th>
-                  <th className="text-left p-3 font-medium">Email</th>
-                  <th className="text-left p-3 font-medium">Telepon</th>
-                  <th className="text-left p-3 font-medium">Tanggal Daftar</th>
-                  <th className="text-left p-3 font-medium">Aksi</th>
-                </tr>
-              </thead>
-              <tbody>
+          <DataTableShell>
+            <DataTable>
+              <DataTableHead>
+                <DataTableHeadRow>
+                  <DataTableTh>ID</DataTableTh>
+                  <DataTableTh>Nama</DataTableTh>
+                  <DataTableTh>Email</DataTableTh>
+                  <DataTableTh>Telepon</DataTableTh>
+                  <DataTableTh>Tanggal Daftar</DataTableTh>
+                  <DataTableTh stickyRight>Aksi</DataTableTh>
+                </DataTableHeadRow>
+              </DataTableHead>
+              <DataTableBody>
                 {volunteers.map((v) => (
-                  <tr key={v.id} className="border-t border-border hover:bg-muted/30 transition-colors">
-                    <td className="p-3">{v.id}</td>
-                    <td className="p-3 font-medium">{v.full_name}</td>
-                    <td className="p-3">{v.email}</td>
-                    <td className="p-3">{v.phone ?? "-"}</td>
-                    <td className="p-3">{formatDate(v.created_at)}</td>
-                    <td className="p-3">
-                      <div className="flex gap-1">
-                        <Button 
-                          size="sm" 
-                          variant="outline"
-                          onClick={() => handleEdit(v)}
-                        >
-                          <Edit className="h-4 w-4" />
+                  <DataTableRow key={v.id}>
+                    <DataTableTd className="whitespace-nowrap">{v.id}</DataTableTd>
+                    <DataTableTd className="font-medium">{v.full_name}</DataTableTd>
+                    <DataTableTd>{v.email}</DataTableTd>
+                    <DataTableTd>{v.phone ?? "-"}</DataTableTd>
+                    <DataTableTd className="whitespace-nowrap">{formatDate(v.created_at)}</DataTableTd>
+                    <DataTableTd stickyRight>
+                      <div className="flex gap-0.5">
+                        <Button size="sm" variant="outline" className="h-7 w-7 p-0" onClick={() => handleEdit(v)} title="Edit">
+                          <Edit className="h-3.5 w-3.5" />
                         </Button>
-                        <Button 
-                          size="sm" 
-                          variant="outline"
-                          onClick={() => handleDelete(v.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
+                        <Button size="sm" variant="outline" className="h-7 w-7 p-0" onClick={() => handleDelete(v.id)} title="Hapus">
+                          <Trash2 className="h-3.5 w-3.5" />
                         </Button>
                       </div>
-                    </td>
-                  </tr>
+                    </DataTableTd>
+                  </DataTableRow>
                 ))}
-                {volunteers.length === 0 && (
-                  <tr>
-                    <td className="p-4 text-center text-muted-foreground" colSpan={6}>
-                      Tidak ada data.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-          
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between">
-              <div className="text-sm text-muted-foreground">
-                Menampilkan {((currentPage - 1) * itemsPerPage) + 1} sampai {Math.min(currentPage * itemsPerPage, totalItems)} dari {totalItems} data
-              </div>
-              <Pagination>
-                <PaginationContent>
-                  <PaginationItem>
-                    <PaginationPrevious 
-                      onClick={() => currentPage > 1 && handlePageChange(currentPage - 1)}
-                      className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
-                    />
-                  </PaginationItem>
-                  
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                    <PaginationItem key={page}>
-                      <PaginationLink
-                        onClick={() => handlePageChange(page)}
-                        isActive={currentPage === page}
-                        className="cursor-pointer"
-                      >
-                        {page}
-                      </PaginationLink>
-                    </PaginationItem>
-                  ))}
-                  
-                  <PaginationItem>
-                    <PaginationNext 
-                      onClick={() => currentPage < totalPages && handlePageChange(currentPage + 1)}
-                      className={currentPage === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
-                    />
-                  </PaginationItem>
-                </PaginationContent>
-              </Pagination>
-            </div>
-          )}
+                {volunteers.length === 0 && <DataTableEmpty colSpan={6} />}
+              </DataTableBody>
+            </DataTable>
+          </DataTableShell>
+
+          <ElegantPagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={handlePageChange}
+            totalItems={totalItems}
+            itemsPerPage={itemsPerPage}
+            onPageSizeChange={handlePageSizeChange}
+          />
         </CardContent>
       </Card>
 

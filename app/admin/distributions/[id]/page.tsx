@@ -5,7 +5,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { DistributionTabs } from "@/components/admin/distribution-tabs"
 import { apiClient } from "@/lib/api"
-import { ArrowLeft, MapPin, Calendar, User, Package, Clipboard, ExternalLink } from "lucide-react"
+import { ArrowLeft, MapPin, Calendar, User, Package, Clipboard, ExternalLink, Printer } from "lucide-react"
 import dynamic from "next/dynamic"
 import { useRouter } from "next/navigation"
 
@@ -65,7 +65,7 @@ export default function DistributionDetailPage({ params }: DistributionDetailPag
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-4">
           <Button variant="outline" onClick={() => router.back()}>
             <ArrowLeft className="h-4 w-4 mr-2" />
@@ -76,6 +76,15 @@ export default function DistributionDetailPage({ params }: DistributionDetailPag
             <p className="text-muted-foreground">Detail laporan distribusi bantuan</p>
           </div>
         </div>
+        <Button
+          variant="outline"
+          onClick={() =>
+            window.open(`/api/distributions/${distribution.id}/pdf`, "_blank")
+          }
+        >
+          <Printer className="h-4 w-4 mr-2" />
+          Print Distrep
+        </Button>
       </div>
 
       {/* Informasi Utama */}

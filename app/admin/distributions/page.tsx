@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import dynamic from "next/dynamic"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -12,19 +13,35 @@ import {
   ModalFooter, 
   ModalTrigger 
 } from "@/components/ui/modal"
+import { ElegantPagination } from "@/components/ui/elegant-pagination"
 import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination"
+  DataTable,
+  DataTableBody,
+  DataTableEmpty,
+  DataTableHead,
+  DataTableHeadRow,
+  DataTableRow,
+  DataTableShell,
+  DataTableTd,
+  DataTableTh,
+} from "@/components/ui/data-table"
 import { apiClient } from "@/lib/api"
-import { Edit, Trash2, Eye, Download, Filter } from "lucide-react"
+import { Edit, Trash2, Eye, Download, Filter, Printer } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import * as XLSX from 'xlsx'
 import Select from 'react-select'
+
+const MapPicker = dynamic(
+  () => import("@/components/admin/map-picker").then((m) => m.MapPicker),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="md:col-span-2 h-[260px] rounded-lg border bg-muted/30 flex items-center justify-center text-sm text-muted-foreground">
+        Memuat peta...
+      </div>
+    ),
+  }
+)
 
 type DistRow = {
   id: number
@@ -87,9 +104,18 @@ export default function DistributionsPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [totalItems, setTotalItems] = useState(0)
-  const itemsPerPage = 10
+  const [itemsPerPage, setItemsPerPage] = useState(10)
 
-  const loadData = async (query?: string, page: number = 1, selectedVolunteer?: {value: number, label: string} | null) => {
+  const paginateRows = (data: DistRow[], page: number, pageSize: number) => {
+    setAllDistributions(data)
+    setTotalItems(data.length)
+    setTotalPages(Math.max(1, Math.ceil(data.length / pageSize) || 1))
+    const startIndex = (page - 1) * pageSize
+    setDistributions(data.slice(startIndex, startIndex + pageSize))
+    setCurrentPage(page)
+  }
+
+  const loadData = async (query?: string, page: number = 1, selectedVolunteer?: {value: number, label: string} | null, pageSize: number = itemsPerPage) => {
     try {
       setLoading(true)
       const [distributionsResponse, optionsResponse, provincesResponse] = await Promise.all([
@@ -108,15 +134,7 @@ export default function DistributionsPage() {
           )
         }
         
-        setAllDistributions(filteredDistributions)
-        const startIndex = (page - 1) * itemsPerPage
-        const endIndex = startIndex + itemsPerPage
-        const paginatedDistributions = filteredDistributions.slice(startIndex, endIndex)
-        
-        setDistributions(paginatedDistributions)
-        setTotalItems(filteredDistributions.length)
-        setTotalPages(Math.ceil(filteredDistributions.length / itemsPerPage))
-        setCurrentPage(page)
+        paginateRows(filteredDistributions, page, pageSize)
       }
       
       if (optionsResponse.success && optionsResponse.data) {
@@ -186,8 +204,12 @@ export default function DistributionsPage() {
   }
 
   const handlePageChange = (page: number) => {
-    setCurrentPage(page)
-    loadData(searchQuery, page, volunteerFilter)
+    paginateRows(allDistributions, page, itemsPerPage)
+  }
+
+  const handlePageSizeChange = (size: number) => {
+    setItemsPerPage(size)
+    paginateRows(allDistributions, 1, size)
   }
 
   const handleExportXLSX = () => {
@@ -399,6 +421,10 @@ export default function DistributionsPage() {
     window.location.href = `/admin/distributions/${id}`
   }
 
+  const handlePrint = (id: number) => {
+    window.open(`/api/distributions/${id}/pdf`, "_blank")
+  }
+
   const openCreateModal = () => {
     setEditingDistribution(null)
     setFormData({
@@ -433,8 +459,8 @@ export default function DistributionsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <Card>
+    <div className="space-y-6 min-w-0 max-w-full">
+      <Card className="min-w-0 max-w-full overflow-hidden">
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-balance">Distributions</CardTitle>
           <div className="flex gap-2">
@@ -502,30 +528,31 @@ export default function DistributionsPage() {
               </div>
             </div>
           </div>
-          <div className="overflow-x-auto">
-            <table className="min-w-[1000px] w-full border border-border rounded-md">
-              <thead>
-                <tr className="bg-muted/50">
-                  <th className="text-left p-3 font-medium">ID</th>
-                  <th className="text-left p-3 font-medium">Tanggal</th>
-                  <th className="text-left p-3 font-medium">Status</th>
-                  <th className="text-left p-3 font-medium">Penerima</th>
-                  <th className="text-left p-3 font-medium">Items</th>
-                  <th className="text-left p-3 font-medium">Volunteer</th>
-                  <th className="text-left p-3 font-medium">Desa</th>
-                  <th className="text-left p-3 font-medium">Kecamatan</th>
-                  <th className="text-left p-3 font-medium">Kab/Kota</th>
-                  <th className="text-left p-3 font-medium">Provinsi</th>
-                  <th className="text-left p-3 font-medium">Aksi</th>
-                </tr>
-              </thead>
-              <tbody>
-                {distributions.map((d) => (
-                  <tr key={d.id} className="border-t border-border hover:bg-muted/30 transition-colors">
-                    <td className="p-3">{d.id}</td>
-                    <td className="p-3">{d.distribution_date}</td>
-                    <td className="p-3">
-                      <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
+          <DataTableShell>
+            <DataTable>
+              <DataTableHead>
+                <DataTableHeadRow>
+                  <DataTableTh>ID</DataTableTh>
+                  <DataTableTh>Tanggal</DataTableTh>
+                  <DataTableTh>Status</DataTableTh>
+                  <DataTableTh>Kegiatan / Penerima</DataTableTh>
+                  <DataTableTh>Items</DataTableTh>
+                  <DataTableTh>Volunteer</DataTableTh>
+                  <DataTableTh>Wilayah</DataTableTh>
+                  <DataTableTh stickyRight>Aksi</DataTableTh>
+                </DataTableHeadRow>
+              </DataTableHead>
+              <DataTableBody>
+                {distributions.map((d) => {
+                  const wilayah = [d.village, d.district, d.regency, d.province]
+                    .filter(Boolean)
+                    .join(", ")
+                  return (
+                  <DataTableRow key={d.id}>
+                    <DataTableTd className="whitespace-nowrap">{d.id}</DataTableTd>
+                    <DataTableTd className="whitespace-nowrap">{d.distribution_date}</DataTableTd>
+                    <DataTableTd>
+                      <span className={`inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-medium ${
                         d.status === 'completed' 
                           ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300'
                           : d.status === 'in_progress'
@@ -534,118 +561,66 @@ export default function DistributionsPage() {
                       }`}>
                         {d.status}
                       </span>
-                    </td>
-                    <td className="p-3">
-                      <div>
-                        <div className="font-medium">{d.recipient_name}</div>
-                        {d.recipient_phone && (
-                          <div className="text-sm text-muted-foreground">{d.recipient_phone}</div>
-                        )}
-                      </div>
-                    </td>
-                    <td className="p-3">
-                      <div>
-                        <div className="font-medium">{d.items}</div>
-                        <div className="text-sm text-muted-foreground">Qty: {d.quantity}</div>
-                      </div>
-                    </td>
-                    <td className="p-3">{d.volunteer ?? "-"}</td>
-                    <td className="p-3">{d.village ?? "-"}</td>
-                    <td className="p-3">{d.district ?? "-"}</td>
-                    <td className="p-3">{d.regency ?? "-"}</td>
-                    <td className="p-3">{d.province ?? "-"}</td>
-                    <td className="p-3">
-                      <div className="flex gap-1">
-                        <Button 
-                          size="sm" 
-                          variant="outline"
-                          onClick={() => handleView(d.id)}
-                        >
-                          <Eye className="h-4 w-4" />
+                    </DataTableTd>
+                    <DataTableTd className="max-w-[160px] truncate" title={d.recipient_name || ''}>
+                      <div className="font-medium truncate">{d.recipient_name}</div>
+                      {d.recipient_phone && (
+                        <div className="text-[10px] text-muted-foreground">{d.recipient_phone}</div>
+                      )}
+                    </DataTableTd>
+                    <DataTableTd className="max-w-[120px] truncate" title={`${d.items} Qty: ${d.quantity}`}>
+                      <div className="truncate">{d.items}</div>
+                      <div className="text-[10px] text-muted-foreground">Qty: {d.quantity}</div>
+                    </DataTableTd>
+                    <DataTableTd className="max-w-[110px] truncate" title={d.volunteer || ''}>
+                      {d.volunteer ?? "-"}
+                    </DataTableTd>
+                    <DataTableTd className="max-w-[180px] truncate" title={wilayah || ''}>
+                      {wilayah || "-"}
+                    </DataTableTd>
+                    <DataTableTd stickyRight>
+                      <div className="flex gap-0.5">
+                        <Button size="sm" variant="outline" className="h-7 w-7 p-0" onClick={() => handleView(d.id)} title="Lihat">
+                          <Eye className="h-3.5 w-3.5" />
                         </Button>
-                        <Button 
-                          size="sm" 
-                          variant="outline"
-                          onClick={() => handleEdit(d)}
-                        >
-                          <Edit className="h-4 w-4" />
+                        <Button size="sm" variant="outline" className="h-7 w-7 p-0" onClick={() => handlePrint(d.id)} title="Print">
+                          <Printer className="h-3.5 w-3.5" />
                         </Button>
-                        <Button 
-                          size="sm" 
-                          variant="outline"
-                          onClick={() => handleDelete(d.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
+                        <Button size="sm" variant="outline" className="h-7 w-7 p-0" onClick={() => handleEdit(d)} title="Edit">
+                          <Edit className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button size="sm" variant="outline" className="h-7 w-7 p-0" onClick={() => handleDelete(d.id)} title="Hapus">
+                          <Trash2 className="h-3.5 w-3.5" />
                         </Button>
                       </div>
-                    </td>
-                  </tr>
-                ))}
-                {distributions.length === 0 && (
-                  <tr>
-                    <td className="p-4 text-center text-muted-foreground" colSpan={8}>
-                      Tidak ada data.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-          
-          <div className="flex items-center justify-between">
-            <div className="text-sm text-muted-foreground">
-              {totalItems > 0 ? (
-                <>
-                  Menampilkan {((currentPage - 1) * itemsPerPage) + 1} sampai {Math.min(currentPage * itemsPerPage, totalItems)} dari {totalItems} data
-                  {volunteerFilter && (
-                    <span className="ml-2 text-blue-600">
-                      (Filter: {volunteerFilter.label})
-                    </span>
-                  )}
-                </>
-              ) : (
-                "Tidak ada data"
-              )}
-            </div>
-            
-            {totalPages > 1 && (
-              <Pagination>
-                <PaginationContent>
-                  <PaginationItem>
-                    <PaginationPrevious 
-                      onClick={() => currentPage > 1 && handlePageChange(currentPage - 1)}
-                      className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
-                    />
-                  </PaginationItem>
-                  
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                    <PaginationItem key={page}>
-                      <PaginationLink
-                        onClick={() => handlePageChange(page)}
-                        isActive={currentPage === page}
-                        className="cursor-pointer"
-                      >
-                        {page}
-                      </PaginationLink>
-                    </PaginationItem>
-                  ))}
-                  
-                  <PaginationItem>
-                    <PaginationNext 
-                      onClick={() => currentPage < totalPages && handlePageChange(currentPage + 1)}
-                      className={currentPage === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
-                    />
-                  </PaginationItem>
-                </PaginationContent>
-              </Pagination>
-            )}
-          </div>
+                    </DataTableTd>
+                  </DataTableRow>
+                  )
+                })}
+                {distributions.length === 0 && <DataTableEmpty colSpan={8} />}
+              </DataTableBody>
+            </DataTable>
+          </DataTableShell>
+
+          <ElegantPagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={handlePageChange}
+            totalItems={totalItems}
+            itemsPerPage={itemsPerPage}
+            onPageSizeChange={handlePageSizeChange}
+            extraInfo={
+              volunteerFilter ? (
+                <span className="text-blue-600">(Filter: {volunteerFilter.label})</span>
+              ) : null
+            }
+          />
         </CardContent>
       </Card>
 
       {/* Modal Form */}
       <Modal open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <ModalContent className="max-w-3xl">
+        <ModalContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <ModalHeader>
             <ModalTitle>
               {editingDistribution ? 'Edit Distribution' : 'Tambah Distribution'}
@@ -695,6 +670,26 @@ export default function DistributionsPage() {
                 <label className="text-sm font-medium mb-2 block">Alamat Lengkap</label>
                 <Input value={formData.full_address} onChange={(e) => setFormData({ ...formData, full_address: e.target.value })} placeholder="Alamat lengkap" />
               </div>
+
+              {isModalOpen && (
+                <div className="md:col-span-2 space-y-2">
+                  <MapPicker
+                    key={`dist-map-${editingDistribution?.id ?? "new"}-${isModalOpen}`}
+                    latitude={formData.latitude}
+                    longitude={formData.longitude}
+                    height={280}
+                    onChange={({ latitude, longitude, label }) => {
+                      setFormData((prev) => ({
+                        ...prev,
+                        latitude,
+                        longitude,
+                        // Fill address from search selection; keep manual edits if already typed
+                        full_address: label || prev.full_address,
+                      }))
+                    }}
+                  />
+                </div>
+              )}
 
               <div>
                 <label className="text-sm font-medium mb-2 block">Latitude</label>

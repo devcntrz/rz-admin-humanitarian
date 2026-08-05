@@ -2,6 +2,17 @@ import { sql } from "@/lib/db"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import {
+  DataTable,
+  DataTableBody,
+  DataTableEmpty,
+  DataTableHead,
+  DataTableHeadRow,
+  DataTableRow,
+  DataTableShell,
+  DataTableTd,
+  DataTableTh,
+} from "@/components/ui/data-table"
 import { revalidatePath } from "next/cache"
 
 type DisasterType = { id: number; name: string }
@@ -51,31 +62,25 @@ export default async function DisasterTypesPage({ searchParams }: { searchParams
               Cari
             </Button>
           </form>
-          <div className="overflow-x-auto">
-            <table className="w-full border rounded-md">
-              <thead>
-                <tr className="bg-muted">
-                  <th className="text-left p-2">ID</th>
-                  <th className="text-left p-2">Nama</th>
-                </tr>
-              </thead>
-              <tbody>
+          <DataTableShell>
+            <DataTable>
+              <DataTableHead>
+                <DataTableHeadRow>
+                  <DataTableTh>ID</DataTableTh>
+                  <DataTableTh>Nama</DataTableTh>
+                </DataTableHeadRow>
+              </DataTableHead>
+              <DataTableBody>
                 {data.map((d) => (
-                  <tr key={d.id} className="border-t">
-                    <td className="p-2">{d.id}</td>
-                    <td className="p-2">{d.name}</td>
-                  </tr>
+                  <DataTableRow key={d.id}>
+                    <DataTableTd>{d.id}</DataTableTd>
+                    <DataTableTd>{d.name}</DataTableTd>
+                  </DataTableRow>
                 ))}
-                {data.length === 0 && (
-                  <tr>
-                    <td className="p-4 text-center text-muted-foreground" colSpan={2}>
-                      Tidak ada data.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+                {data.length === 0 && <DataTableEmpty colSpan={2} />}
+              </DataTableBody>
+            </DataTable>
+          </DataTableShell>
         </CardContent>
       </Card>
     </div>

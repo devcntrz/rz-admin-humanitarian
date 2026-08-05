@@ -129,6 +129,15 @@ export const volunteers = pgTable(
   ],
 )
 
+export const fieldCoordinators = pgTable("field_coordinators", {
+  id: serial("id").primaryKey(),
+  fullName: varchar("full_name", { length: 100 }).notNull(),
+  phoneNumber: varchar("phone_number", { length: 20 }),
+  createdAt: timestamp("created_at", { withTimezone: true }).default(
+    sql`CURRENT_TIMESTAMP`,
+  ),
+})
+
 // ---------------------------------------------------------------------------
 // Situation reports
 // ---------------------------------------------------------------------------
@@ -152,6 +161,12 @@ export const siteReports = pgTable(
     districtId: char("district_id", { length: 7 }),
     villageId: char("village_id", { length: 10 }),
     subject: varchar("subject"),
+    incidentAt: timestamp("incident_at", { withTimezone: true }),
+    chronology: text("chronology"),
+    disasterStatus: text("disaster_status"),
+    latestCondition: text("latest_condition"),
+    fieldCoordinatorId: integer("field_coordinator_id"),
+    informationSource: text("information_source"),
   },
   (table) => [
     index("site_reports_volunteer_id_idx").on(table.volunteerId),
@@ -162,6 +177,7 @@ export const siteReports = pgTable(
     index("site_reports_village_id_idx").on(table.villageId),
     index("site_reports_report_date_idx").on(table.reportDate),
     index("site_reports_status_idx").on(table.status),
+    index("site_reports_field_coordinator_id_idx").on(table.fieldCoordinatorId),
     foreignKey({
       columns: [table.volunteerId],
       foreignColumns: [volunteers.id],
@@ -191,6 +207,11 @@ export const siteReports = pgTable(
       columns: [table.villageId],
       foreignColumns: [villages.id],
       name: "site_reports_fk_village",
+    }).onDelete("set null"),
+    foreignKey({
+      columns: [table.fieldCoordinatorId],
+      foreignColumns: [fieldCoordinators.id],
+      name: "site_reports_field_coordinator_id_fkey",
     }).onDelete("set null"),
   ],
 )

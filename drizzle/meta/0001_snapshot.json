@@ -1,0 +1,1694 @@
+{
+  "id": "f0339ead-79f2-4d4c-a603-322dc438b298",
+  "prevId": "7833085b-8caa-4144-a447-7b74a0317722",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.admins": {
+      "name": "admins",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "full_name": {
+          "name": "full_name",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "email": {
+          "name": "email",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "password_hash": {
+          "name": "password_hash",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "role": {
+          "name": "role",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "CURRENT_TIMESTAMP"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "admins_email_key": {
+          "name": "admins_email_key",
+          "nullsNotDistinct": false,
+          "columns": [
+            "email"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "admins_role_check": {
+          "name": "admins_role_check",
+          "value": "\"admins\".\"role\" IN ('super_admin', 'regional_admin', 'staff')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.disaster_types": {
+      "name": "disaster_types",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "disaster_types_name_key": {
+          "name": "disaster_types_name_key",
+          "nullsNotDistinct": false,
+          "columns": [
+            "name"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.distribution_reports": {
+      "name": "distribution_reports",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "bigserial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "spk_number": {
+          "name": "spk_number",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "event_name": {
+          "name": "event_name",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "event_date": {
+          "name": "event_date",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "disaster_type_id": {
+          "name": "disaster_type_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "pic_volunteer_id": {
+          "name": "pic_volunteer_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "full_address": {
+          "name": "full_address",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "latitude": {
+          "name": "latitude",
+          "type": "numeric(10, 8)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "longitude": {
+          "name": "longitude",
+          "type": "numeric(11, 8)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "beneficiary_count": {
+          "name": "beneficiary_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "volunteer_count": {
+          "name": "volunteer_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "CURRENT_TIMESTAMP"
+        },
+        "province_id": {
+          "name": "province_id",
+          "type": "char(2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "regency_id": {
+          "name": "regency_id",
+          "type": "char(4)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "district_id": {
+          "name": "district_id",
+          "type": "char(7)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "village_id": {
+          "name": "village_id",
+          "type": "char(10)",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "distribution_reports_disaster_type_id_idx": {
+          "name": "distribution_reports_disaster_type_id_idx",
+          "columns": [
+            {
+              "expression": "disaster_type_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "distribution_reports_pic_volunteer_id_idx": {
+          "name": "distribution_reports_pic_volunteer_id_idx",
+          "columns": [
+            {
+              "expression": "pic_volunteer_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "distribution_reports_province_id_idx": {
+          "name": "distribution_reports_province_id_idx",
+          "columns": [
+            {
+              "expression": "province_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "distribution_reports_regency_id_idx": {
+          "name": "distribution_reports_regency_id_idx",
+          "columns": [
+            {
+              "expression": "regency_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "distribution_reports_district_id_idx": {
+          "name": "distribution_reports_district_id_idx",
+          "columns": [
+            {
+              "expression": "district_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "distribution_reports_village_id_idx": {
+          "name": "distribution_reports_village_id_idx",
+          "columns": [
+            {
+              "expression": "village_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "distribution_reports_event_date_idx": {
+          "name": "distribution_reports_event_date_idx",
+          "columns": [
+            {
+              "expression": "event_date",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "distribution_reports_disaster_type_id_fkey": {
+          "name": "distribution_reports_disaster_type_id_fkey",
+          "tableFrom": "distribution_reports",
+          "tableTo": "disaster_types",
+          "columnsFrom": [
+            "disaster_type_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "distribution_reports_pic_volunteer_id_fkey": {
+          "name": "distribution_reports_pic_volunteer_id_fkey",
+          "tableFrom": "distribution_reports",
+          "tableTo": "volunteers",
+          "columnsFrom": [
+            "pic_volunteer_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "distribution_reports_fk_province": {
+          "name": "distribution_reports_fk_province",
+          "tableFrom": "distribution_reports",
+          "tableTo": "provinces",
+          "columnsFrom": [
+            "province_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "distribution_reports_fk_regency": {
+          "name": "distribution_reports_fk_regency",
+          "tableFrom": "distribution_reports",
+          "tableTo": "regencies",
+          "columnsFrom": [
+            "regency_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "distribution_reports_fk_district": {
+          "name": "distribution_reports_fk_district",
+          "tableFrom": "distribution_reports",
+          "tableTo": "districts",
+          "columnsFrom": [
+            "district_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "distribution_reports_fk_village": {
+          "name": "distribution_reports_fk_village",
+          "tableFrom": "distribution_reports",
+          "tableTo": "villages",
+          "columnsFrom": [
+            "village_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "distribution_reports_spk_number_key": {
+          "name": "distribution_reports_spk_number_key",
+          "nullsNotDistinct": false,
+          "columns": [
+            "spk_number"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.districts": {
+      "name": "districts",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "char(7)",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "regency_id": {
+          "name": "regency_id",
+          "type": "char(4)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "districts_regency_id_idx": {
+          "name": "districts_regency_id_idx",
+          "columns": [
+            {
+              "expression": "regency_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "districts_regency_id_fkey": {
+          "name": "districts_regency_id_fkey",
+          "tableFrom": "districts",
+          "tableTo": "regencies",
+          "columnsFrom": [
+            "regency_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.dr_clusters": {
+      "name": "dr_clusters",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "bigserial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "distribution_report_id": {
+          "name": "distribution_report_id",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "cluster_name": {
+          "name": "cluster_name",
+          "type": "varchar(150)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "program_name": {
+          "name": "program_name",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "quantity": {
+          "name": "quantity",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "unit": {
+          "name": "unit",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "dr_clusters_distribution_report_id_idx": {
+          "name": "dr_clusters_distribution_report_id_idx",
+          "columns": [
+            {
+              "expression": "distribution_report_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "dr_clusters_distribution_report_id_fkey": {
+          "name": "dr_clusters_distribution_report_id_fkey",
+          "tableFrom": "dr_clusters",
+          "tableTo": "distribution_reports",
+          "columnsFrom": [
+            "distribution_report_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.dr_documentations": {
+      "name": "dr_documentations",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "bigserial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "distribution_report_id": {
+          "name": "distribution_report_id",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "file_url": {
+          "name": "file_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "dr_documentations_distribution_report_id_idx": {
+          "name": "dr_documentations_distribution_report_id_idx",
+          "columns": [
+            {
+              "expression": "distribution_report_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "dr_documentations_distribution_report_id_fkey": {
+          "name": "dr_documentations_distribution_report_id_fkey",
+          "tableFrom": "dr_documentations",
+          "tableTo": "distribution_reports",
+          "columnsFrom": [
+            "distribution_report_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.dr_partners": {
+      "name": "dr_partners",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "bigserial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "distribution_report_id": {
+          "name": "distribution_report_id",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "partner_name": {
+          "name": "partner_name",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "dr_partners_distribution_report_id_idx": {
+          "name": "dr_partners_distribution_report_id_idx",
+          "columns": [
+            {
+              "expression": "distribution_report_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "dr_partners_distribution_report_id_fkey": {
+          "name": "dr_partners_distribution_report_id_fkey",
+          "tableFrom": "dr_partners",
+          "tableTo": "distribution_reports",
+          "columnsFrom": [
+            "distribution_report_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.field_coordinators": {
+      "name": "field_coordinators",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "full_name": {
+          "name": "full_name",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "phone_number": {
+          "name": "phone_number",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "CURRENT_TIMESTAMP"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.provinces": {
+      "name": "provinces",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "char(2)",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.regencies": {
+      "name": "regencies",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "char(4)",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "province_id": {
+          "name": "province_id",
+          "type": "char(2)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "regencies_province_id_idx": {
+          "name": "regencies_province_id_idx",
+          "columns": [
+            {
+              "expression": "province_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "regencies_province_id_fkey": {
+          "name": "regencies_province_id_fkey",
+          "tableFrom": "regencies",
+          "tableTo": "provinces",
+          "columnsFrom": [
+            "province_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.site_reports": {
+      "name": "site_reports",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "bigserial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "volunteer_id": {
+          "name": "volunteer_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "disaster_type_id": {
+          "name": "disaster_type_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "full_address": {
+          "name": "full_address",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "latitude": {
+          "name": "latitude",
+          "type": "numeric(10, 8)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "longitude": {
+          "name": "longitude",
+          "type": "numeric(11, 8)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "report_date": {
+          "name": "report_date",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'draft'"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "CURRENT_TIMESTAMP"
+        },
+        "province_id": {
+          "name": "province_id",
+          "type": "char(2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "regency_id": {
+          "name": "regency_id",
+          "type": "char(4)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "district_id": {
+          "name": "district_id",
+          "type": "char(7)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "village_id": {
+          "name": "village_id",
+          "type": "char(10)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "subject": {
+          "name": "subject",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "incident_at": {
+          "name": "incident_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "chronology": {
+          "name": "chronology",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "disaster_status": {
+          "name": "disaster_status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "latest_condition": {
+          "name": "latest_condition",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "field_coordinator_id": {
+          "name": "field_coordinator_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "information_source": {
+          "name": "information_source",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "site_reports_volunteer_id_idx": {
+          "name": "site_reports_volunteer_id_idx",
+          "columns": [
+            {
+              "expression": "volunteer_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "site_reports_disaster_type_id_idx": {
+          "name": "site_reports_disaster_type_id_idx",
+          "columns": [
+            {
+              "expression": "disaster_type_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "site_reports_province_id_idx": {
+          "name": "site_reports_province_id_idx",
+          "columns": [
+            {
+              "expression": "province_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "site_reports_regency_id_idx": {
+          "name": "site_reports_regency_id_idx",
+          "columns": [
+            {
+              "expression": "regency_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "site_reports_district_id_idx": {
+          "name": "site_reports_district_id_idx",
+          "columns": [
+            {
+              "expression": "district_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "site_reports_village_id_idx": {
+          "name": "site_reports_village_id_idx",
+          "columns": [
+            {
+              "expression": "village_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "site_reports_report_date_idx": {
+          "name": "site_reports_report_date_idx",
+          "columns": [
+            {
+              "expression": "report_date",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "site_reports_status_idx": {
+          "name": "site_reports_status_idx",
+          "columns": [
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "site_reports_field_coordinator_id_idx": {
+          "name": "site_reports_field_coordinator_id_idx",
+          "columns": [
+            {
+              "expression": "field_coordinator_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "site_reports_volunteer_id_fkey": {
+          "name": "site_reports_volunteer_id_fkey",
+          "tableFrom": "site_reports",
+          "tableTo": "volunteers",
+          "columnsFrom": [
+            "volunteer_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "site_reports_disaster_type_id_fkey": {
+          "name": "site_reports_disaster_type_id_fkey",
+          "tableFrom": "site_reports",
+          "tableTo": "disaster_types",
+          "columnsFrom": [
+            "disaster_type_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "site_reports_fk_province": {
+          "name": "site_reports_fk_province",
+          "tableFrom": "site_reports",
+          "tableTo": "provinces",
+          "columnsFrom": [
+            "province_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "site_reports_fk_regency": {
+          "name": "site_reports_fk_regency",
+          "tableFrom": "site_reports",
+          "tableTo": "regencies",
+          "columnsFrom": [
+            "regency_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "site_reports_fk_district": {
+          "name": "site_reports_fk_district",
+          "tableFrom": "site_reports",
+          "tableTo": "districts",
+          "columnsFrom": [
+            "district_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "site_reports_fk_village": {
+          "name": "site_reports_fk_village",
+          "tableFrom": "site_reports",
+          "tableTo": "villages",
+          "columnsFrom": [
+            "village_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "site_reports_field_coordinator_id_fkey": {
+          "name": "site_reports_field_coordinator_id_fkey",
+          "tableFrom": "site_reports",
+          "tableTo": "field_coordinators",
+          "columnsFrom": [
+            "field_coordinator_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.sr_documentations": {
+      "name": "sr_documentations",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "bigserial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "site_report_id": {
+          "name": "site_report_id",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "file_url": {
+          "name": "file_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "sr_documentations_site_report_id_idx": {
+          "name": "sr_documentations_site_report_id_idx",
+          "columns": [
+            {
+              "expression": "site_report_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "sr_documentations_site_report_id_fkey": {
+          "name": "sr_documentations_site_report_id_fkey",
+          "tableFrom": "sr_documentations",
+          "tableTo": "site_reports",
+          "columnsFrom": [
+            "site_report_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.sr_infrastructure_damages": {
+      "name": "sr_infrastructure_damages",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "bigserial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "site_report_id": {
+          "name": "site_report_id",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "damage_type": {
+          "name": "damage_type",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "quantity": {
+          "name": "quantity",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "unit": {
+          "name": "unit",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "damage_level": {
+          "name": "damage_level",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "sr_infrastructure_damages_site_report_id_idx": {
+          "name": "sr_infrastructure_damages_site_report_id_idx",
+          "columns": [
+            {
+              "expression": "site_report_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "sr_infrastructure_damages_site_report_id_fkey": {
+          "name": "sr_infrastructure_damages_site_report_id_fkey",
+          "tableFrom": "sr_infrastructure_damages",
+          "tableTo": "site_reports",
+          "columnsFrom": [
+            "site_report_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.sr_refugee_infos": {
+      "name": "sr_refugee_infos",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "bigserial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "site_report_id": {
+          "name": "site_report_id",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "location_name": {
+          "name": "location_name",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "number_of_refugees": {
+          "name": "number_of_refugees",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "sr_refugee_infos_site_report_id_idx": {
+          "name": "sr_refugee_infos_site_report_id_idx",
+          "columns": [
+            {
+              "expression": "site_report_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "sr_refugee_infos_site_report_id_fkey": {
+          "name": "sr_refugee_infos_site_report_id_fkey",
+          "tableFrom": "sr_refugee_infos",
+          "tableTo": "site_reports",
+          "columnsFrom": [
+            "site_report_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.sr_urgent_needs": {
+      "name": "sr_urgent_needs",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "bigserial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "site_report_id": {
+          "name": "site_report_id",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "need_item": {
+          "name": "need_item",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "quantity": {
+          "name": "quantity",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "unit": {
+          "name": "unit",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "sr_urgent_needs_site_report_id_idx": {
+          "name": "sr_urgent_needs_site_report_id_idx",
+          "columns": [
+            {
+              "expression": "site_report_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "sr_urgent_needs_site_report_id_fkey": {
+          "name": "sr_urgent_needs_site_report_id_fkey",
+          "tableFrom": "sr_urgent_needs",
+          "tableTo": "site_reports",
+          "columnsFrom": [
+            "site_report_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.sr_victim_counts": {
+      "name": "sr_victim_counts",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "bigserial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "site_report_id": {
+          "name": "site_report_id",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "victim_type": {
+          "name": "victim_type",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "quantity": {
+          "name": "quantity",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "unit": {
+          "name": "unit",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "sr_victim_counts_site_report_id_idx": {
+          "name": "sr_victim_counts_site_report_id_idx",
+          "columns": [
+            {
+              "expression": "site_report_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "sr_victim_counts_site_report_id_fkey": {
+          "name": "sr_victim_counts_site_report_id_fkey",
+          "tableFrom": "sr_victim_counts",
+          "tableTo": "site_reports",
+          "columnsFrom": [
+            "site_report_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.villages": {
+      "name": "villages",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "char(10)",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "district_id": {
+          "name": "district_id",
+          "type": "char(7)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "villages_district_id_idx": {
+          "name": "villages_district_id_idx",
+          "columns": [
+            {
+              "expression": "district_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "villages_district_id_fkey": {
+          "name": "villages_district_id_fkey",
+          "tableFrom": "villages",
+          "tableTo": "districts",
+          "columnsFrom": [
+            "district_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.volunteers": {
+      "name": "volunteers",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "full_name": {
+          "name": "full_name",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "email": {
+          "name": "email",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "phone_number": {
+          "name": "phone_number",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "password_hash": {
+          "name": "password_hash",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "CURRENT_TIMESTAMP"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "volunteers_email_key": {
+          "name": "volunteers_email_key",
+          "nullsNotDistinct": false,
+          "columns": [
+            "email"
+          ]
+        },
+        "volunteers_phone_number_key": {
+          "name": "volunteers_phone_number_key",
+          "nullsNotDistinct": false,
+          "columns": [
+            "phone_number"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {},
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

@@ -8,6 +8,13 @@
       "when": 1785893824758,
       "tag": "0000_odd_micromacro",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1785896599025,
+      "tag": "0001_remarkable_devos",
+      "breakpoints": true
     }
   ]
 }

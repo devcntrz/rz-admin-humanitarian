@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
             OR COALESCE(province,'') ILIKE ${like}
             OR CAST(id AS TEXT) ILIKE ${like}
           ORDER BY id DESC
-          LIMIT 100
+          LIMIT 2000
         `
       } else {
         distributions = await sql`
@@ -70,7 +70,7 @@ export async function GET(request: NextRequest) {
           LEFT JOIN regencies reg ON reg.id = dist.regency_id
           LEFT JOIN provinces prov ON prov.id = reg.province_id
           ORDER BY dr.id DESC
-          LIMIT 100
+          LIMIT 2000
         `
       }
       

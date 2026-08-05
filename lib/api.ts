@@ -53,6 +53,7 @@ class ApiClient {
     full_name: string
     email: string
     phone?: string
+    password?: string
   }): Promise<ApiResponse<any>> {
     return this.request('/volunteers', {
       method: 'POST',
@@ -65,6 +66,7 @@ class ApiClient {
     full_name: string
     email: string
     phone?: string
+    password?: string
   }): Promise<ApiResponse<any>> {
     return this.request('/volunteers', {
       method: 'PUT',
@@ -76,6 +78,24 @@ class ApiClient {
     return this.request(`/volunteers?id=${id}`, {
       method: 'DELETE',
     })
+  }
+
+  async importVolunteers(file: File): Promise<ApiResponse<{
+    success_count: number
+    failed_count: number
+    errors: { row: number; email?: string; reason: string }[]
+  }>> {
+    const formData = new FormData()
+    formData.append('file', file)
+    return this.request('/volunteers/import', {
+      method: 'POST',
+      body: formData,
+    })
+  }
+
+  async getFieldCoordinators(query?: string): Promise<ApiResponse<any[]>> {
+    const params = query ? `?q=${encodeURIComponent(query)}` : ''
+    return this.request(`/config/field-coordinators${params}`)
   }
 
   // Site Reports
@@ -101,6 +121,12 @@ class ApiClient {
     province_id?: string
     regency_id?: string
     district_id?: string
+    incident_at?: string
+    chronology?: string
+    disaster_status?: string
+    latest_condition?: string
+    field_coordinator_id?: number
+    information_source?: string
   }): Promise<ApiResponse<any>> {
     return this.request('/site-reports', {
       method: 'POST',
@@ -123,6 +149,12 @@ class ApiClient {
       province_id?: string
       regency_id?: string
       district_id?: string
+      incident_at?: string
+      chronology?: string
+      disaster_status?: string
+      latest_condition?: string
+      field_coordinator_id?: number
+      information_source?: string
     }
   ): Promise<ApiResponse<any>> {
     return this.request(`/site-reports/${id}`, {

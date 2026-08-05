@@ -16,6 +16,7 @@ import {
   Home,
   AlertTriangle,
   Shield,
+  UserCheck,
   Loader2
 } from "lucide-react"
 import { useState } from "react"
@@ -34,6 +35,7 @@ const nav = [
       { href: "/admin/config/districts", label: "Districts", icon: Home },
       { href: "/admin/config/villages", label: "Villages", icon: Home },
       { href: "/admin/config/disaster-types", label: "Disaster Types", icon: AlertTriangle },
+      { href: "/admin/config/field-coordinators", label: "Field Coordinators", icon: UserCheck },
       { href: "/admin/config/admins", label: "Admins", icon: Shield },
     ],
   },

@@ -5,7 +5,17 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ElegantPagination } from "@/components/ui/elegant-pagination"
-import { ConfigModal } from "@/components/ui/config-modal"
+import {
+  DataTable,
+  DataTableBody,
+  DataTableEmpty,
+  DataTableHead,
+  DataTableHeadRow,
+  DataTableRow,
+  DataTableShell,
+  DataTableTd,
+  DataTableTh,
+} from "@/components/ui/data-table"
 import { apiClient } from "@/lib/api"
 import { useToast } from "@/hooks/use-toast"
 
@@ -21,28 +31,27 @@ export default function ProvincesPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [totalItems, setTotalItems] = useState(0)
-  const itemsPerPage = 10
+  const [itemsPerPage, setItemsPerPage] = useState(10)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingProvince, setEditingProvince] = useState<Province | null>(null)
 
-  const loadData = async (query?: string, page: number = 1) => {
+  const paginateRows = (data: Province[], page: number, pageSize: number) => {
+    setAllProvinces(data)
+    setTotalItems(data.length)
+    setTotalPages(Math.max(1, Math.ceil(data.length / pageSize) || 1))
+    const startIndex = (page - 1) * pageSize
+    setProvinces(data.slice(startIndex, startIndex + pageSize))
+    setCurrentPage(page)
+  }
+
+  const loadData = async (query?: string, page: number = 1, pageSize: number = itemsPerPage) => {
     try {
       setLoading(true)
       
       const response = await apiClient.getProvinces(query)
       
       if (response.success && response.data) {
-        const allProvincesData = response.data
-        setAllProvinces(allProvincesData)
-        setTotalItems(allProvincesData.length)
-        setTotalPages(Math.ceil(allProvincesData.length / itemsPerPage))
-        
-        const startIndex = (page - 1) * itemsPerPage
-        const endIndex = startIndex + itemsPerPage
-        const paginatedData = allProvincesData.slice(startIndex, endIndex)
-        
-        setProvinces(paginatedData)
-        setCurrentPage(page)
+        paginateRows(response.data, page, pageSize)
       } else {
         toast({
           title: "Error",
@@ -123,8 +132,12 @@ export default function ProvincesPage() {
   }
 
   const handlePageChange = (page: number) => {
-    setCurrentPage(page)
-    loadData(searchQuery, page)
+    paginateRows(allProvinces, page, itemsPerPage)
+  }
+
+  const handlePageSizeChange = (size: number) => {
+    setItemsPerPage(size)
+    paginateRows(allProvinces, 1, size)
   }
 
   if (loading) {
@@ -139,14 +152,14 @@ export default function ProvincesPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 min-w-0 max-w-full">
       <div className="flex justify-end">
         <Button onClick={handleAdd}>
           Tambah Provinsi
         </Button>
       </div>
 
-      <Card>
+      <Card className="overflow-hidden min-w-0">
         <CardHeader>
           <CardTitle>Daftar Provinsi</CardTitle>
         </CardHeader>
@@ -166,21 +179,21 @@ export default function ProvincesPage() {
               Clear
             </Button>
           </div>
-          <div className="overflow-x-auto">
-            <table className="w-full border rounded-md">
-              <thead>
-                <tr className="bg-muted">
-                  <th className="text-left p-2">Kode</th>
-                  <th className="text-left p-2">Nama</th>
-                  <th className="text-left p-2">Aksi</th>
-                </tr>
-              </thead>
-              <tbody>
+          <DataTableShell>
+            <DataTable>
+              <DataTableHead>
+                <DataTableHeadRow>
+                  <DataTableTh>Kode</DataTableTh>
+                  <DataTableTh>Nama</DataTableTh>
+                  <DataTableTh>Aksi</DataTableTh>
+                </DataTableHeadRow>
+              </DataTableHead>
+              <DataTableBody>
                 {provinces.map((p) => (
-                  <tr key={p.id} className="border-t hover:bg-muted/30 transition-colors">
-                    <td className="p-2">{p.id}</td>
-                    <td className="p-2">{p.name}</td>
-                    <td className="p-2">
+                  <DataTableRow key={p.id}>
+                    <DataTableTd>{p.id}</DataTableTd>
+                    <DataTableTd>{p.name}</DataTableTd>
+                    <DataTableTd>
                       <div className="flex gap-2">
                         <Button
                           size="sm"
@@ -197,19 +210,13 @@ export default function ProvincesPage() {
                           Hapus
                         </Button>
                       </div>
-                    </td>
-                  </tr>
+                    </DataTableTd>
+                  </DataTableRow>
                 ))}
-                {provinces.length === 0 && (
-                  <tr>
-                    <td className="p-4 text-center text-muted-foreground" colSpan={3}>
-                      Tidak ada data.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+                {provinces.length === 0 && <DataTableEmpty colSpan={3} />}
+              </DataTableBody>
+            </DataTable>
+          </DataTableShell>
           
           <ElegantPagination
             currentPage={currentPage}
@@ -217,6 +224,7 @@ export default function ProvincesPage() {
             onPageChange={handlePageChange}
             totalItems={totalItems}
             itemsPerPage={itemsPerPage}
+            onPageSizeChange={handlePageSizeChange}
           />
         </CardContent>
       </Card>

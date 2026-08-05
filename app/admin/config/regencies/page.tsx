@@ -5,6 +5,17 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ElegantPagination } from "@/components/ui/elegant-pagination"
+import {
+  DataTable,
+  DataTableBody,
+  DataTableEmpty,
+  DataTableHead,
+  DataTableHeadRow,
+  DataTableRow,
+  DataTableShell,
+  DataTableTd,
+  DataTableTh,
+} from "@/components/ui/data-table"
 import { apiClient } from "@/lib/api"
 import { useToast } from "@/hooks/use-toast"
 import Select from 'react-select'
@@ -24,7 +35,7 @@ export default function RegenciesPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [totalItems, setTotalItems] = useState(0)
-  const itemsPerPage = 10
+  const [itemsPerPage, setItemsPerPage] = useState(10)
   const [formData, setFormData] = useState({
     id: "",
     province_id: "",
@@ -32,7 +43,16 @@ export default function RegenciesPage() {
   })
   const [editingRegency, setEditingRegency] = useState<Regency | null>(null)
 
-  const loadData = async (query?: string, page: number = 1, selectedProvince?: {value: string, label: string} | null) => {
+  const paginateRows = (data: Regency[], page: number, pageSize: number) => {
+    setAllRegencies(data)
+    setTotalItems(data.length)
+    setTotalPages(Math.max(1, Math.ceil(data.length / pageSize) || 1))
+    const startIndex = (page - 1) * pageSize
+    setRegencies(data.slice(startIndex, startIndex + pageSize))
+    setCurrentPage(page)
+  }
+
+  const loadData = async (query?: string, page: number = 1, selectedProvince?: {value: string, label: string} | null, pageSize: number = itemsPerPage) => {
     try {
       setLoading(true)
       
@@ -46,17 +66,7 @@ export default function RegenciesPage() {
       const regenciesResponse = await apiClient.getRegencies(query, selectedProvince?.value)
       
       if (regenciesResponse.success && regenciesResponse.data) {
-        const allRegenciesData = regenciesResponse.data
-        setAllRegencies(allRegenciesData)
-        setTotalItems(allRegenciesData.length)
-        setTotalPages(Math.ceil(allRegenciesData.length / itemsPerPage))
-        
-        const startIndex = (page - 1) * itemsPerPage
-        const endIndex = startIndex + itemsPerPage
-        const paginatedData = allRegenciesData.slice(startIndex, endIndex)
-        
-        setRegencies(paginatedData)
-        setCurrentPage(page)
+        paginateRows(regenciesResponse.data, page, pageSize)
       } else {
         toast({
           title: "Error",
@@ -173,8 +183,12 @@ export default function RegenciesPage() {
   }
 
   const handlePageChange = (page: number) => {
-    setCurrentPage(page)
-    loadData(searchQuery, page, provinceFilter)
+    paginateRows(allRegencies, page, itemsPerPage)
+  }
+
+  const handlePageSizeChange = (size: number) => {
+    setItemsPerPage(size)
+    paginateRows(allRegencies, 1, size)
   }
 
   if (loading) {
@@ -189,8 +203,8 @@ export default function RegenciesPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <Card>
+    <div className="space-y-6 min-w-0 max-w-full">
+      <Card className="overflow-hidden min-w-0">
         <CardHeader>
           <CardTitle>Tambah Kabupaten/Kota</CardTitle>
         </CardHeader>
@@ -251,7 +265,7 @@ export default function RegenciesPage() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="overflow-hidden min-w-0">
         <CardHeader>
           <CardTitle>Daftar Kabupaten/Kota</CardTitle>
         </CardHeader>
@@ -319,23 +333,23 @@ export default function RegenciesPage() {
               </div>
             </div>
           </div>
-          <div className="overflow-x-auto">
-            <table className="w-full border rounded-md">
-              <thead>
-                <tr className="bg-muted">
-                  <th className="text-left p-2">Kode</th>
-                  <th className="text-left p-2">Nama</th>
-                  <th className="text-left p-2">Provinsi</th>
-                  <th className="text-left p-2">Aksi</th>
-                </tr>
-              </thead>
-              <tbody>
+          <DataTableShell>
+            <DataTable>
+              <DataTableHead>
+                <DataTableHeadRow>
+                  <DataTableTh>Kode</DataTableTh>
+                  <DataTableTh>Nama</DataTableTh>
+                  <DataTableTh>Provinsi</DataTableTh>
+                  <DataTableTh>Aksi</DataTableTh>
+                </DataTableHeadRow>
+              </DataTableHead>
+              <DataTableBody>
                 {regencies.map((r) => (
-                  <tr key={r.id} className="border-t hover:bg-muted/30 transition-colors">
-                    <td className="p-2">{r.id}</td>
-                    <td className="p-2">{r.name}</td>
-                    <td className="p-2">{r.province_name}</td>
-                    <td className="p-2">
+                  <DataTableRow key={r.id}>
+                    <DataTableTd>{r.id}</DataTableTd>
+                    <DataTableTd>{r.name}</DataTableTd>
+                    <DataTableTd>{r.province_name}</DataTableTd>
+                    <DataTableTd>
                       <div className="flex gap-2">
                         <Button
                           size="sm"
@@ -359,19 +373,13 @@ export default function RegenciesPage() {
                           Hapus
                         </Button>
                       </div>
-                    </td>
-                  </tr>
+                    </DataTableTd>
+                  </DataTableRow>
                 ))}
-                {regencies.length === 0 && (
-                  <tr>
-                    <td className="p-4 text-center text-muted-foreground" colSpan={4}>
-                      Tidak ada data.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+                {regencies.length === 0 && <DataTableEmpty colSpan={4} />}
+              </DataTableBody>
+            </DataTable>
+          </DataTableShell>
           
           <ElegantPagination
             currentPage={currentPage}
@@ -379,6 +387,7 @@ export default function RegenciesPage() {
             onPageChange={handlePageChange}
             totalItems={totalItems}
             itemsPerPage={itemsPerPage}
+            onPageSizeChange={handlePageSizeChange}
           />
         </CardContent>
       </Card>

@@ -2,6 +2,15 @@ import { sql } from "@/lib/db"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import {
+  DataTable,
+  DataTableBody,
+  DataTableEmpty,
+  DataTableHead,
+  DataTableHeadRow,
+  DataTableShell,
+  DataTableTh,
+} from "@/components/ui/data-table"
 import { revalidatePath } from "next/cache"
 import AdminRow from "@/components/admin/admin-row"
 
@@ -95,32 +104,26 @@ export default async function AdminsPage({ searchParams }: { searchParams?: { q?
               Cari
             </Button>
           </form>
-          <div className="overflow-x-auto">
-            <table className="w-full border rounded-md">
-              <thead>
-                <tr className="bg-muted">
-                  <th className="text-left p-2">ID</th>
-                  <th className="text-left p-2">Nama</th>
-                  <th className="text-left p-2">Email</th>
-                  <th className="text-left p-2">Role</th>
-                  <th className="text-left p-2">Dibuat</th>
-                  <th className="text-left p-2">Aksi</th>
-                </tr>
-              </thead>
-              <tbody>
+          <DataTableShell>
+            <DataTable>
+              <DataTableHead>
+                <DataTableHeadRow>
+                  <DataTableTh>ID</DataTableTh>
+                  <DataTableTh>Nama</DataTableTh>
+                  <DataTableTh>Email</DataTableTh>
+                  <DataTableTh>Role</DataTableTh>
+                  <DataTableTh>Dibuat</DataTableTh>
+                  <DataTableTh>Aksi</DataTableTh>
+                </DataTableHeadRow>
+              </DataTableHead>
+              <DataTableBody>
                 {data.map((a) => (
                   <AdminRow key={a.id} admin={a} updateAction={updateAdmin} deleteAction={deleteAdmin} />
                 ))}
-                {data.length === 0 && (
-                  <tr>
-                    <td className="p-4 text-center text-muted-foreground" colSpan={6}>
-                      Tidak ada data.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+                {data.length === 0 && <DataTableEmpty colSpan={6} />}
+              </DataTableBody>
+            </DataTable>
+          </DataTableShell>
         </CardContent>
       </Card>
     </div>

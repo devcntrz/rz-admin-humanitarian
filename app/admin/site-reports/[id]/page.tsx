@@ -5,7 +5,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { SiteReportTabs } from "@/components/admin/site-report-tabs"
 import { apiClient } from "@/lib/api"
-import { ArrowLeft, MapPin, Calendar, User, AlertTriangle, FileText, Clipboard, ExternalLink } from "lucide-react"
+import { ArrowLeft, MapPin, Calendar, User, AlertTriangle, FileText, Clipboard, ExternalLink, Printer, UserCheck } from "lucide-react"
 import dynamic from "next/dynamic"
 import { useRouter } from "next/navigation"
 
@@ -65,7 +65,7 @@ export default function SituationReportDetailPage({ params }: SituationReportDet
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-4">
           <Button variant="outline" onClick={() => router.back()}>
             <ArrowLeft className="h-4 w-4 mr-2" />
@@ -76,6 +76,15 @@ export default function SituationReportDetailPage({ params }: SituationReportDet
             <p className="text-muted-foreground">Detail laporan situasi bencana</p>
           </div>
         </div>
+        <Button
+          variant="outline"
+          onClick={() =>
+            window.open(`/api/site-reports/${siteReport.id}/pdf`, "_blank")
+          }
+        >
+          <Printer className="h-4 w-4 mr-2" />
+          Print Sitrep
+        </Button>
       </div>
 
       {/* Informasi Utama */}
@@ -88,19 +97,18 @@ export default function SituationReportDetailPage({ params }: SituationReportDet
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {siteReport.subject && (
-              <div className="space-y-2 md:col-span-2 lg:col-span-3">
-                <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                  Subjek Laporan
-                </div>
-                <p className="text-lg font-semibold tracking-tight">{siteReport.subject}</p>
+            <div className="space-y-2 md:col-span-2 lg:col-span-3">
+              <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                Subjek Laporan
               </div>
-            )}
+              <p className="text-lg font-semibold tracking-tight">{siteReport.subject || '-'}</p>
+            </div>
+
             <div className="space-y-2">
               <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
                 <User className="h-4 w-4" />
                 Volunteer
-          </div>
+              </div>
               <p className="text-lg">{siteReport.volunteer_name || '-'}</p>
               {siteReport.volunteer_email && (
                 <p className="text-sm text-muted-foreground">{siteReport.volunteer_email}</p>
@@ -114,9 +122,11 @@ export default function SituationReportDetailPage({ params }: SituationReportDet
               </div>
               <p className="text-lg">{siteReport.village_name || '-'}</p>
               <p className="text-sm text-muted-foreground">
-                {siteReport.district_name}, {siteReport.regency_name}, {siteReport.province_name}
-            </p>
-          </div>
+                {[siteReport.district_name, siteReport.regency_name, siteReport.province_name]
+                  .filter(Boolean)
+                  .join(", ") || "-"}
+              </p>
+            </div>
 
             <div className="space-y-2">
               <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
@@ -131,31 +141,70 @@ export default function SituationReportDetailPage({ params }: SituationReportDet
                 <Calendar className="h-4 w-4" />
                 Tanggal Laporan
               </div>
-              <p className="text-lg">{siteReport.report_date}</p>
+              <p className="text-lg">{siteReport.report_date || '-'}</p>
             </div>
 
             <div className="space-y-2">
               <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                Status
+                <Calendar className="h-4 w-4" />
+                Waktu Kejadian
+              </div>
+              <p className="text-lg">
+                {siteReport.incident_at_display || siteReport.incident_at || '-'}
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                Status Laporan
               </div>
               <span className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-medium ${
                 siteReport.status === 'submitted' 
                   ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300'
                   : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300'
               }`}>
-                {siteReport.status}
+                {siteReport.status || '-'}
               </span>
             </div>
 
-            {siteReport.full_address && (
-              <div className="space-y-2 md:col-span-2 lg:col-span-3">
-                <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                  <MapPin className="h-4 w-4" />
-                  Alamat Lengkap
-                </div>
-                <p className="text-lg">{siteReport.full_address}</p>
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                <UserCheck className="h-4 w-4" />
+                Koordinator Lapangan
               </div>
-            )}
+              <p className="text-lg">{siteReport.field_coordinator_name || '-'}</p>
+              {siteReport.field_coordinator_phone && (
+                <p className="text-sm text-muted-foreground">{siteReport.field_coordinator_phone}</p>
+              )}
+            </div>
+
+            <div className="space-y-2 md:col-span-2 lg:col-span-3">
+              <div className="text-sm font-medium text-muted-foreground">Status Bencana</div>
+              <p className="text-base whitespace-pre-wrap">{siteReport.disaster_status || '-'}</p>
+            </div>
+
+            <div className="space-y-2 md:col-span-2 lg:col-span-3">
+              <div className="text-sm font-medium text-muted-foreground">Kronologi</div>
+              <p className="text-base whitespace-pre-wrap">{siteReport.chronology || '-'}</p>
+            </div>
+
+            <div className="space-y-2 md:col-span-2 lg:col-span-3">
+              <div className="text-sm font-medium text-muted-foreground">Kondisi Mutakhir</div>
+              <p className="text-base whitespace-pre-wrap">{siteReport.latest_condition || '-'}</p>
+            </div>
+
+            <div className="space-y-2 md:col-span-2 lg:col-span-3">
+              <div className="text-sm font-medium text-muted-foreground">Sumber Informasi</div>
+              <p className="text-base whitespace-pre-wrap">{siteReport.information_source || '-'}</p>
+            </div>
+
+            <div className="space-y-2 md:col-span-2 lg:col-span-3">
+              <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                <MapPin className="h-4 w-4" />
+                Alamat Lengkap
+              </div>
+              <p className="text-lg">{siteReport.full_address || '-'}</p>
+            </div>
           </div>
 
           {(siteReport.latitude !== null && siteReport.latitude !== undefined && siteReport.longitude !== null && siteReport.longitude !== undefined) && (

@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import dynamic from "next/dynamic"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -12,19 +13,35 @@ import {
   ModalFooter, 
   ModalTrigger 
 } from "@/components/ui/modal"
+import { ElegantPagination } from "@/components/ui/elegant-pagination"
 import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination"
+  DataTable,
+  DataTableBody,
+  DataTableEmpty,
+  DataTableHead,
+  DataTableHeadRow,
+  DataTableRow,
+  DataTableShell,
+  DataTableTd,
+  DataTableTh,
+} from "@/components/ui/data-table"
 import { apiClient } from "@/lib/api"
-import { Edit, Trash2, Eye, Download, Filter } from "lucide-react"
+import { Edit, Trash2, Eye, Download, Filter, Printer } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import * as XLSX from 'xlsx'
 import Select from 'react-select'
+
+const MapPicker = dynamic(
+  () => import("@/components/admin/map-picker").then((m) => m.MapPicker),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="md:col-span-2 h-[260px] rounded-lg border bg-muted/30 flex items-center justify-center text-sm text-muted-foreground">
+        Memuat peta...
+      </div>
+    ),
+  }
+)
 
 type ReportRow = {
   id: number
@@ -38,6 +55,34 @@ type ReportRow = {
   district?: string | null
   regency?: string | null
   province?: string | null
+  incident_at?: string | null
+  disaster_status?: string | null
+  field_coordinator_id?: number | null
+  field_coordinator?: string | null
+}
+
+type FieldCoordinator = { id: number; full_name: string; phone?: string | null }
+
+const emptyFormData = {
+  subject: "",
+  volunteer_id: "",
+  disaster_type_id: "",
+  province_id: "",
+  regency_id: "",
+  district_id: "",
+  village_id: "",
+  full_address: "",
+  latitude: "",
+  longitude: "",
+  report_date: new Date().toISOString().slice(0, 10),
+  status: "draft",
+  incident_date: "",
+  incident_time: "",
+  chronology: "",
+  disaster_status: "",
+  latest_condition: "",
+  field_coordinator_id: "",
+  information_source: "",
 }
 
 type Options = {
@@ -58,39 +103,37 @@ export default function SituationReportsPage() {
   const [regencies, setRegencies] = useState<{ id: string; name: string }[]>([])
   const [districts, setDistricts] = useState<{ id: string; name: string }[]>([])
   const [villages, setVillages] = useState<{ id: string; name: string }[]>([])
+  const [fieldCoordinators, setFieldCoordinators] = useState<FieldCoordinator[]>([])
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const [volunteerFilter, setVolunteerFilter] = useState<{value: number, label: string} | null>(null)
   const [allReports, setAllReports] = useState<ReportRow[]>([])
-  const [formData, setFormData] = useState({
-    subject: "",
-    volunteer_id: "",
-    disaster_type_id: "",
-    province_id: "",
-    regency_id: "",
-    district_id: "",
-    village_id: "",
-    full_address: "",
-    latitude: "",
-    longitude: "",
-    report_date: new Date().toISOString().slice(0, 10),
-    status: "draft"
-  })
+  const [formData, setFormData] = useState({ ...emptyFormData })
   const [editingReport, setEditingReport] = useState<ReportRow | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [totalItems, setTotalItems] = useState(0)
-  const itemsPerPage = 10
+  const [itemsPerPage, setItemsPerPage] = useState(10)
 
-  const loadData = async (query?: string, page: number = 1, selectedVolunteer?: {value: number, label: string} | null) => {
+  const paginateReports = (data: ReportRow[], page: number, pageSize: number) => {
+    setAllReports(data)
+    setTotalItems(data.length)
+    setTotalPages(Math.max(1, Math.ceil(data.length / pageSize) || 1))
+    const startIndex = (page - 1) * pageSize
+    setReports(data.slice(startIndex, startIndex + pageSize))
+    setCurrentPage(page)
+  }
+
+  const loadData = async (query?: string, page: number = 1, selectedVolunteer?: {value: number, label: string} | null, pageSize: number = itemsPerPage) => {
     try {
       setLoading(true)
-      const [reportsResponse, optionsResponse, provincesResponse] = await Promise.all([
+      const [reportsResponse, optionsResponse, provincesResponse, coordinatorsResponse] = await Promise.all([
         apiClient.getSiteReports(query),
         apiClient.getOptions(),
-        apiClient.getProvinces()
+        apiClient.getProvinces(),
+        apiClient.getFieldCoordinators(),
       ])
       
       if (reportsResponse.success && reportsResponse.data) {
@@ -103,15 +146,7 @@ export default function SituationReportsPage() {
           )
         }
         
-        setAllReports(filteredReports)
-        const startIndex = (page - 1) * itemsPerPage
-        const endIndex = startIndex + itemsPerPage
-        const paginatedReports = filteredReports.slice(startIndex, endIndex)
-        
-        setReports(paginatedReports)
-        setTotalItems(filteredReports.length)
-        setTotalPages(Math.ceil(filteredReports.length / itemsPerPage))
-        setCurrentPage(page)
+        paginateReports(filteredReports, page, pageSize)
       }
       
       if (optionsResponse.success && optionsResponse.data) {
@@ -119,6 +154,9 @@ export default function SituationReportsPage() {
       }
       if (provincesResponse.success && provincesResponse.data) {
         setProvinces(provincesResponse.data)
+      }
+      if (coordinatorsResponse.success && coordinatorsResponse.data) {
+        setFieldCoordinators(coordinatorsResponse.data)
       }
     } catch (error) {
       console.error('Error loading data:', error)
@@ -186,19 +224,30 @@ export default function SituationReportsPage() {
   }
 
   const handlePageChange = (page: number) => {
-    setCurrentPage(page)
-    loadData(searchQuery, page, volunteerFilter)
+    paginateReports(allReports, page, itemsPerPage)
+  }
+
+  const handlePageSizeChange = (size: number) => {
+    setItemsPerPage(size)
+    paginateReports(allReports, 1, size)
   }
 
   const handleExportXLSX = () => {
     try {
       const exportData = allReports.map(report => ({
         'ID': report.id,
+        'Subjek': report.subject || '-',
         'Tanggal Laporan': report.report_date,
+        'Waktu Kejadian': report.incident_at || '-',
         'Status': report.status,
+        'Status Bencana': report.disaster_status || '-',
+        'Koordinator Lapangan': report.field_coordinator || '-',
         'Volunteer': report.volunteer || '-',
         'Jenis Bencana': report.disaster || '-',
-        'Desa': report.village || '-'
+        'Desa': report.village || '-',
+        'Kecamatan': report.district || '-',
+        'Kab/Kota': report.regency || '-',
+        'Provinsi': report.province || '-',
       }))
 
       const ws = XLSX.utils.json_to_sheet(exportData)
@@ -223,6 +272,12 @@ export default function SituationReportsPage() {
     }
   }
 
+  const buildIncidentAt = () => {
+    if (!formData.incident_date) return undefined
+    const time = formData.incident_time || "00:00"
+    return `${formData.incident_date}T${time}`
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
@@ -239,7 +294,15 @@ export default function SituationReportsPage() {
         latitude: formData.latitude ? Number(formData.latitude) : undefined,
         longitude: formData.longitude ? Number(formData.longitude) : undefined,
         report_date: formData.report_date,
-        status: formData.status
+        status: formData.status,
+        incident_at: buildIncidentAt(),
+        chronology: formData.chronology || undefined,
+        disaster_status: formData.disaster_status || undefined,
+        latest_condition: formData.latest_condition || undefined,
+        field_coordinator_id: formData.field_coordinator_id
+          ? Number(formData.field_coordinator_id)
+          : undefined,
+        information_source: formData.information_source || undefined,
       }
 
       let response
@@ -255,24 +318,9 @@ export default function SituationReportsPage() {
           description: editingReport ? "Situation report berhasil diperbarui." : "Situation report berhasil ditambahkan.",
           variant: "default",
         })
-        // Reset form and close modal
-        setFormData({
-          subject: "",
-          volunteer_id: "",
-          disaster_type_id: "",
-          province_id: "",
-          regency_id: "",
-          district_id: "",
-          village_id: "",
-          full_address: "",
-          latitude: "",
-          longitude: "",
-          report_date: new Date().toISOString().slice(0, 10),
-          status: "draft"
-        })
+        setFormData({ ...emptyFormData, report_date: new Date().toISOString().slice(0, 10) })
         setEditingReport(null)
         setIsModalOpen(false)
-        // Reload data
         loadData(searchQuery, currentPage, volunteerFilter)
       } else {
         toast({
@@ -304,6 +352,11 @@ export default function SituationReportsPage() {
       const detail = await apiClient.getSiteReport(report.id)
       const d = detail?.data || {}
 
+      const incidentLocal = d.incident_at_local || ""
+      const [incidentDate = "", incidentTime = ""] = incidentLocal
+        ? incidentLocal.split("T")
+        : ["", ""]
+
       setFormData({
         subject: d.subject || report.subject || "",
         volunteer_id: d.volunteer_id ? String(d.volunteer_id) : "",
@@ -316,7 +369,14 @@ export default function SituationReportsPage() {
         latitude: d.latitude != null ? String(d.latitude) : "",
         longitude: d.longitude != null ? String(d.longitude) : "",
         report_date: d.report_date || report.report_date,
-        status: d.status || report.status || "draft"
+        status: d.status || report.status || "draft",
+        incident_date: incidentDate,
+        incident_time: incidentTime ? incidentTime.slice(0, 5) : "",
+        chronology: d.chronology || "",
+        disaster_status: d.disaster_status || "",
+        latest_condition: d.latest_condition || "",
+        field_coordinator_id: d.field_coordinator_id ? String(d.field_coordinator_id) : "",
+        information_source: d.information_source || "",
       })
 
       setIsModalOpen(true)
@@ -372,21 +432,13 @@ export default function SituationReportsPage() {
     window.location.href = `/admin/site-reports/${id}`
   }
 
+  const handlePrint = (id: number) => {
+    window.open(`/api/site-reports/${id}/pdf`, "_blank")
+  }
+
   const openCreateModal = () => {
     setEditingReport(null)
-    setFormData({
-      volunteer_id: "",
-      disaster_type_id: "",
-      province_id: "",
-      regency_id: "",
-      district_id: "",
-      village_id: "",
-      full_address: "",
-      latitude: "",
-      longitude: "",
-      report_date: new Date().toISOString().slice(0, 10),
-      status: "draft"
-    })
+    setFormData({ ...emptyFormData, report_date: new Date().toISOString().slice(0, 10) })
     setIsModalOpen(true)
   }
 
@@ -402,8 +454,8 @@ export default function SituationReportsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <Card>
+    <div className="space-y-6 min-w-0 max-w-full">
+      <Card className="min-w-0 max-w-full overflow-hidden">
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-balance">Situation Reports</CardTitle>
           <div className="flex gap-2">
@@ -416,7 +468,7 @@ export default function SituationReportsPage() {
             </Button>
           </div>
         </CardHeader>
-        <CardContent className="space-y-3">
+        <CardContent className="space-y-3 min-w-0">
           <div className="flex gap-2 flex-wrap">
             <form onSubmit={handleSearch} className="flex gap-2 flex-1">
               <Input 
@@ -471,136 +523,99 @@ export default function SituationReportsPage() {
               </div>
             </div>
           </div>
-          <div className="overflow-x-auto">
-            <table className="min-w-[820px] w-full border border-border rounded-md">
-              <thead>
-                <tr className="bg-muted/50">
-                  <th className="text-left p-3 font-medium">ID</th>
-                  <th className="text-left p-3 font-medium">Subjek</th>
-                  <th className="text-left p-3 font-medium">Tanggal</th>
-                  <th className="text-left p-3 font-medium">Status</th>
-                  <th className="text-left p-3 font-medium">Volunteer</th>
-                  <th className="text-left p-3 font-medium">Bencana</th>
-                  <th className="text-left p-3 font-medium">Desa</th>
-                  <th className="text-left p-3 font-medium">Kecamatan</th>
-                  <th className="text-left p-3 font-medium">Kab/Kota</th>
-                  <th className="text-left p-3 font-medium">Provinsi</th>
-                  <th className="text-left p-3 font-medium">Aksi</th>
-                </tr>
-              </thead>
-              <tbody>
-                {reports.map((r) => (
-                  <tr key={r.id} className="border-t border-border hover:bg-muted/30 transition-colors">
-                    <td className="p-3">{r.id}</td>
-                    <td className="p-3 max-w-[280px] truncate" title={r.subject || ''}>{r.subject ?? '-'}</td>
-                    <td className="p-3">{r.report_date}</td>
-                    <td className="p-3">
-                      <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
+          <DataTableShell>
+            <DataTable>
+              <DataTableHead>
+                <DataTableHeadRow>
+                  <DataTableTh>ID</DataTableTh>
+                  <DataTableTh>Subjek</DataTableTh>
+                  <DataTableTh>Tanggal</DataTableTh>
+                  <DataTableTh>Waktu Kejadian</DataTableTh>
+                  <DataTableTh>Status</DataTableTh>
+                  <DataTableTh>Status Bencana</DataTableTh>
+                  <DataTableTh>Koordinator</DataTableTh>
+                  <DataTableTh>Volunteer</DataTableTh>
+                  <DataTableTh>Bencana</DataTableTh>
+                  <DataTableTh>Wilayah</DataTableTh>
+                  <DataTableTh stickyRight>Aksi</DataTableTh>
+                </DataTableHeadRow>
+              </DataTableHead>
+              <DataTableBody>
+                {reports.map((r) => {
+                  const wilayah = [r.village, r.district, r.regency, r.province]
+                    .filter(Boolean)
+                    .join(", ")
+                  return (
+                  <DataTableRow key={r.id}>
+                    <DataTableTd className="whitespace-nowrap">{r.id}</DataTableTd>
+                    <DataTableTd className="max-w-[140px] truncate" title={r.subject || ''}>{r.subject ?? '-'}</DataTableTd>
+                    <DataTableTd className="whitespace-nowrap">{r.report_date}</DataTableTd>
+                    <DataTableTd className="whitespace-nowrap">{r.incident_at ?? "-"}</DataTableTd>
+                    <DataTableTd>
+                      <span className={`inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-medium ${
                         r.status === 'submitted' 
                           ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300'
                           : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300'
                       }`}>
                         {r.status}
                       </span>
-                    </td>
-                    <td className="p-3">{r.volunteer ?? "-"}</td>
-                    <td className="p-3">{r.disaster ?? "-"}</td>
-                    <td className="p-3">{r.village ?? "-"}</td>
-                    <td className="p-3">{r.district ?? "-"}</td>
-                    <td className="p-3">{r.regency ?? "-"}</td>
-                    <td className="p-3">{r.province ?? "-"}</td>
-                    <td className="p-3">
-                      <div className="flex gap-1">
-                        <Button 
-                          size="sm" 
-                          variant="outline"
-                          onClick={() => handleView(r.id)}
-                        >
-                          <Eye className="h-4 w-4" />
+                    </DataTableTd>
+                    <DataTableTd className="max-w-[120px] truncate" title={r.disaster_status || ''}>
+                      {r.disaster_status ?? "-"}
+                    </DataTableTd>
+                    <DataTableTd className="max-w-[110px] truncate" title={r.field_coordinator || ''}>
+                      {r.field_coordinator ?? "-"}
+                    </DataTableTd>
+                    <DataTableTd className="max-w-[110px] truncate" title={r.volunteer || ''}>
+                      {r.volunteer ?? "-"}
+                    </DataTableTd>
+                    <DataTableTd className="whitespace-nowrap">{r.disaster ?? "-"}</DataTableTd>
+                    <DataTableTd className="max-w-[180px] truncate" title={wilayah || ''}>
+                      {wilayah || "-"}
+                    </DataTableTd>
+                    <DataTableTd stickyRight>
+                      <div className="flex gap-0.5">
+                        <Button size="sm" variant="outline" className="h-7 w-7 p-0" onClick={() => handleView(r.id)} title="Lihat">
+                          <Eye className="h-3.5 w-3.5" />
                         </Button>
-                        <Button 
-                          size="sm" 
-                          variant="outline"
-                          onClick={() => handleEdit(r)}
-                        >
-                          <Edit className="h-4 w-4" />
+                        <Button size="sm" variant="outline" className="h-7 w-7 p-0" onClick={() => handlePrint(r.id)} title="Print">
+                          <Printer className="h-3.5 w-3.5" />
                         </Button>
-                        <Button 
-                          size="sm" 
-                          variant="outline"
-                          onClick={() => handleDelete(r.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
+                        <Button size="sm" variant="outline" className="h-7 w-7 p-0" onClick={() => handleEdit(r)} title="Edit">
+                          <Edit className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button size="sm" variant="outline" className="h-7 w-7 p-0" onClick={() => handleDelete(r.id)} title="Hapus">
+                          <Trash2 className="h-3.5 w-3.5" />
                         </Button>
                       </div>
-                    </td>
-                  </tr>
-                ))}
-                {reports.length === 0 && (
-                  <tr>
-                    <td className="p-4 text-center text-muted-foreground" colSpan={7}>
-                      Tidak ada data.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-          
-          <div className="flex items-center justify-between">
-            <div className="text-sm text-muted-foreground">
-              {totalItems > 0 ? (
-                <>
-                  Menampilkan {((currentPage - 1) * itemsPerPage) + 1} sampai {Math.min(currentPage * itemsPerPage, totalItems)} dari {totalItems} data
-                  {volunteerFilter && (
-                    <span className="ml-2 text-blue-600">
-                      (Filter: {volunteerFilter.label})
-                    </span>
-                  )}
-                </>
-              ) : (
-                "Tidak ada data"
-              )}
-            </div>
-            
-              {totalPages > 1 && (
-                <Pagination>
-                  <PaginationContent>
-                    <PaginationItem>
-                      <PaginationPrevious 
-                        onClick={() => currentPage > 1 && handlePageChange(currentPage - 1)}
-                        className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
-                      />
-                    </PaginationItem>
-                    
-                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                      <PaginationItem key={page}>
-                        <PaginationLink
-                          onClick={() => handlePageChange(page)}
-                          isActive={currentPage === page}
-                          className="cursor-pointer"
-                        >
-                          {page}
-                        </PaginationLink>
-                      </PaginationItem>
-                    ))}
-                    
-                    <PaginationItem>
-                      <PaginationNext 
-                        onClick={() => currentPage < totalPages && handlePageChange(currentPage + 1)}
-                        className={currentPage === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
-                      />
-                    </PaginationItem>
-                  </PaginationContent>
-                </Pagination>
-              )}
-            </div>
+                    </DataTableTd>
+                  </DataTableRow>
+                  )
+                })}
+                {reports.length === 0 && <DataTableEmpty colSpan={11} />}
+              </DataTableBody>
+            </DataTable>
+          </DataTableShell>
+
+          <ElegantPagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={handlePageChange}
+            totalItems={totalItems}
+            itemsPerPage={itemsPerPage}
+            onPageSizeChange={handlePageSizeChange}
+            extraInfo={
+              volunteerFilter ? (
+                <span className="text-blue-600">(Filter: {volunteerFilter.label})</span>
+              ) : null
+            }
+          />
         </CardContent>
       </Card>
 
       {/* Modal Form */}
       <Modal open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <ModalContent className="max-w-2xl">
+        <ModalContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <ModalHeader>
             <ModalTitle>
               {editingReport ? 'Edit Situation Report' : 'Tambah Situation Report'}
@@ -609,14 +624,14 @@ export default function SituationReportsPage() {
           
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="md:col-span-2">
-              <label className="text-sm font-medium mb-2 block">Subjek Laporan</label>
-              <Input 
-                value={formData.subject}
-                onChange={(e) => setFormData({...formData, subject: e.target.value})}
-                placeholder="Cth: Banjir Bandang di Desa X"
-              />
-            </div>
+              <div className="md:col-span-2">
+                <label className="text-sm font-medium mb-2 block">Subjek Laporan</label>
+                <Input 
+                  value={formData.subject}
+                  onChange={(e) => setFormData({...formData, subject: e.target.value})}
+                  placeholder="Cth: Banjir Bandang di Desa X"
+                />
+              </div>
               <div>
                 <label className="text-sm font-medium mb-2 block">Volunteer</label>
                 <Select
@@ -637,6 +652,37 @@ export default function SituationReportsPage() {
                   onChange={(opt) => setFormData({ ...formData, disaster_type_id: opt ? String((opt as any).value) : '' })}
                   options={options.disasterTypes.map(d => ({ value: d.id, label: d.name }))}
                   placeholder="Pilih Jenis Bencana (opsional)"
+                  isClearable
+                  isSearchable
+                  className="text-sm"
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-medium mb-2 block">Koordinator Lapangan</label>
+                <Select
+                  value={
+                    formData.field_coordinator_id
+                      ? {
+                          value: Number(formData.field_coordinator_id),
+                          label:
+                            fieldCoordinators.find(
+                              (c) => c.id === Number(formData.field_coordinator_id)
+                            )?.full_name || "",
+                        }
+                      : null
+                  }
+                  onChange={(opt) =>
+                    setFormData({
+                      ...formData,
+                      field_coordinator_id: opt ? String((opt as any).value) : "",
+                    })
+                  }
+                  options={fieldCoordinators.map((c) => ({
+                    value: c.id,
+                    label: c.phone ? `${c.full_name} (${c.phone})` : c.full_name,
+                  }))}
+                  placeholder="Pilih Koordinator Lapangan"
                   isClearable
                   isSearchable
                   className="text-sm"
@@ -709,6 +755,19 @@ export default function SituationReportsPage() {
                 />
               </div>
 
+              <MapPicker
+                latitude={formData.latitude}
+                longitude={formData.longitude}
+                onChange={({ latitude, longitude, label }) => {
+                  setFormData((prev) => ({
+                    ...prev,
+                    latitude,
+                    longitude,
+                    full_address: label && !prev.full_address ? label : prev.full_address,
+                  }))
+                }}
+              />
+
               <div>
                 <label className="text-sm font-medium mb-2 block">Latitude</label>
                 <Input type="number" step="0.00000001" value={formData.latitude} onChange={(e) => setFormData({...formData, latitude: e.target.value})} />
@@ -729,7 +788,7 @@ export default function SituationReportsPage() {
               </div>
               
               <div>
-                <label className="text-sm font-medium mb-2 block">Status</label>
+                <label className="text-sm font-medium mb-2 block">Status Laporan</label>
                 <select 
                   value={formData.status}
                   onChange={(e) => setFormData({...formData, status: e.target.value})}
@@ -740,6 +799,63 @@ export default function SituationReportsPage() {
                   <option value="draft">Draft</option>
                   <option value="submitted">Submitted</option>
                 </select>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium mb-2 block">Waktu Kejadian (Tanggal)</label>
+                <Input
+                  type="date"
+                  value={formData.incident_date}
+                  onChange={(e) => setFormData({ ...formData, incident_date: e.target.value })}
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-medium mb-2 block">Waktu Kejadian (Jam)</label>
+                <Input
+                  type="time"
+                  value={formData.incident_time}
+                  onChange={(e) => setFormData({ ...formData, incident_time: e.target.value })}
+                />
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="text-sm font-medium mb-2 block">Status Bencana</label>
+                <Input
+                  value={formData.disaster_status}
+                  onChange={(e) => setFormData({ ...formData, disaster_status: e.target.value })}
+                  placeholder="Cth: Siaga Darurat Bencana Alam Banjir..."
+                />
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="text-sm font-medium mb-2 block">Kronologi</label>
+                <textarea
+                  value={formData.chronology}
+                  onChange={(e) => setFormData({ ...formData, chronology: e.target.value })}
+                  placeholder="Deskripsi kejadian..."
+                  className="flex min-h-[90px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                />
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="text-sm font-medium mb-2 block">Kondisi Mutakhir</label>
+                <textarea
+                  value={formData.latest_condition}
+                  onChange={(e) => setFormData({ ...formData, latest_condition: e.target.value })}
+                  placeholder="Update kondisi terbaru di lapangan..."
+                  className="flex min-h-[90px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                />
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="text-sm font-medium mb-2 block">Sumber Informasi</label>
+                <textarea
+                  value={formData.information_source}
+                  onChange={(e) => setFormData({ ...formData, information_source: e.target.value })}
+                  placeholder="Cth: Relawan Rumah Zakat, Masyarakat Setempat, BPBD..."
+                  className="flex min-h-[70px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                />
               </div>
             </div>
             

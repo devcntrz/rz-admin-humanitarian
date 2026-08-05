@@ -5,6 +5,17 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ElegantPagination } from "@/components/ui/elegant-pagination"
+import {
+  DataTable,
+  DataTableBody,
+  DataTableEmpty,
+  DataTableHead,
+  DataTableHeadRow,
+  DataTableRow,
+  DataTableShell,
+  DataTableTd,
+  DataTableTh,
+} from "@/components/ui/data-table"
 import { apiClient } from "@/lib/api"
 import { useToast } from "@/hooks/use-toast"
 import Select from 'react-select'
@@ -30,7 +41,7 @@ export default function VillagesPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [totalItems, setTotalItems] = useState(0)
-  const itemsPerPage = 10
+  const [itemsPerPage, setItemsPerPage] = useState(10)
   const [formData, setFormData] = useState({
     id: "",
     district_id: "",
@@ -38,7 +49,16 @@ export default function VillagesPage() {
   })
   const [editingVillage, setEditingVillage] = useState<Village | null>(null)
 
-  const loadData = async (query?: string, page: number = 1, selectedProvince?: {value: string, label: string} | null, selectedRegency?: {value: string, label: string} | null, selectedDistrict?: {value: string, label: string} | null) => {
+  const paginateRows = (data: Village[], page: number, pageSize: number) => {
+    setAllVillages(data)
+    setTotalItems(data.length)
+    setTotalPages(Math.max(1, Math.ceil(data.length / pageSize) || 1))
+    const startIndex = (page - 1) * pageSize
+    setVillages(data.slice(startIndex, startIndex + pageSize))
+    setCurrentPage(page)
+  }
+
+  const loadData = async (query?: string, page: number = 1, selectedProvince?: {value: string, label: string} | null, selectedRegency?: {value: string, label: string} | null, selectedDistrict?: {value: string, label: string} | null, pageSize: number = itemsPerPage) => {
     try {
       setLoading(true)
       
@@ -64,17 +84,7 @@ export default function VillagesPage() {
       const villagesResponse = await apiClient.getVillages(query, selectedDistrict?.value, selectedRegency?.value, selectedProvince?.value)
       
       if (villagesResponse.success && villagesResponse.data) {
-        const allVillagesData = villagesResponse.data
-        setAllVillages(allVillagesData)
-        setTotalItems(allVillagesData.length)
-        setTotalPages(Math.ceil(allVillagesData.length / itemsPerPage))
-        
-        const startIndex = (page - 1) * itemsPerPage
-        const endIndex = startIndex + itemsPerPage
-        const paginatedData = allVillagesData.slice(startIndex, endIndex)
-        
-        setVillages(paginatedData)
-        setCurrentPage(page)
+        paginateRows(villagesResponse.data, page, pageSize)
       } else {
         toast({
           title: "Error",
@@ -210,8 +220,12 @@ export default function VillagesPage() {
   }
 
   const handlePageChange = (page: number) => {
-    setCurrentPage(page)
-    loadData(searchQuery, page, provinceFilter, regencyFilter, districtFilter)
+    paginateRows(allVillages, page, itemsPerPage)
+  }
+
+  const handlePageSizeChange = (size: number) => {
+    setItemsPerPage(size)
+    paginateRows(allVillages, 1, size)
   }
 
   if (loading) {
@@ -226,8 +240,8 @@ export default function VillagesPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <Card>
+    <div className="space-y-6 min-w-0 max-w-full">
+      <Card className="overflow-hidden min-w-0">
         <CardHeader>
           <CardTitle>Tambah Desa/Kelurahan</CardTitle>
         </CardHeader>
@@ -289,7 +303,7 @@ export default function VillagesPage() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="overflow-hidden min-w-0">
         <CardHeader>
           <CardTitle>Daftar Desa/Kelurahan</CardTitle>
         </CardHeader>
@@ -445,27 +459,27 @@ export default function VillagesPage() {
               </div>
             </div>
           </div>
-          <div className="overflow-x-auto">
-            <table className="w-full border rounded-md">
-              <thead>
-                <tr className="bg-muted">
-                  <th className="text-left p-2">Kode</th>
-                  <th className="text-left p-2">Nama</th>
-                  <th className="text-left p-2">Kecamatan</th>
-                  <th className="text-left p-2">Kota/Kabupaten</th>
-                  <th className="text-left p-2">Provinsi</th>
-                  <th className="text-left p-2">Aksi</th>
-                </tr>
-              </thead>
-              <tbody>
+          <DataTableShell>
+            <DataTable>
+              <DataTableHead>
+                <DataTableHeadRow>
+                  <DataTableTh>Kode</DataTableTh>
+                  <DataTableTh>Nama</DataTableTh>
+                  <DataTableTh>Kecamatan</DataTableTh>
+                  <DataTableTh>Kota/Kabupaten</DataTableTh>
+                  <DataTableTh>Provinsi</DataTableTh>
+                  <DataTableTh>Aksi</DataTableTh>
+                </DataTableHeadRow>
+              </DataTableHead>
+              <DataTableBody>
                 {villages.map((v) => (
-                  <tr key={v.id} className="border-t hover:bg-muted/30 transition-colors">
-                    <td className="p-2">{v.id}</td>
-                    <td className="p-2">{v.name}</td>
-                    <td className="p-2">{v.district_name}</td>
-                    <td className="p-2">{v.regency_name ?? '-'}</td>
-                    <td className="p-2">{v.province_name ?? '-'}</td>
-                    <td className="p-2">
+                  <DataTableRow key={v.id}>
+                    <DataTableTd>{v.id}</DataTableTd>
+                    <DataTableTd>{v.name}</DataTableTd>
+                    <DataTableTd>{v.district_name}</DataTableTd>
+                    <DataTableTd>{v.regency_name ?? '-'}</DataTableTd>
+                    <DataTableTd>{v.province_name ?? '-'}</DataTableTd>
+                    <DataTableTd>
                       <div className="flex gap-2">
                         <Button
                           size="sm"
@@ -489,19 +503,13 @@ export default function VillagesPage() {
                           Hapus
                         </Button>
                       </div>
-                    </td>
-                  </tr>
+                    </DataTableTd>
+                  </DataTableRow>
                 ))}
-                {villages.length === 0 && (
-                  <tr>
-                    <td className="p-4 text-center text-muted-foreground" colSpan={4}>
-                      Tidak ada data.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+                {villages.length === 0 && <DataTableEmpty colSpan={6} />}
+              </DataTableBody>
+            </DataTable>
+          </DataTableShell>
           
           <ElegantPagination
             currentPage={currentPage}
@@ -509,6 +517,7 @@ export default function VillagesPage() {
             onPageChange={handlePageChange}
             totalItems={totalItems}
             itemsPerPage={itemsPerPage}
+            onPageSizeChange={handlePageSizeChange}
           />
         </CardContent>
       </Card>

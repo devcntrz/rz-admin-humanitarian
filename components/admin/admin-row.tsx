@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { DataTableRow, DataTableTd } from "@/components/ui/data-table"
 
 type Admin = { id: number; full_name: string; email: string; role: string; created_at: string }
 
@@ -19,28 +20,28 @@ export default function AdminRow({ admin, updateAction, deleteAction }: AdminRow
   const [role, setRole] = useState(admin.role)
 
   return (
-    <tr className="border-t">
-      <td className="p-2 w-[60px]">{admin.id}</td>
-      <td className="p-2">
+    <DataTableRow>
+      <DataTableTd className="w-[60px]">{admin.id}</DataTableTd>
+      <DataTableTd>
         {editing ? (
-          <Input value={fullName} onChange={(e) => setFullName(e.target.value)} required />
+          <Input value={fullName} onChange={(e) => setFullName(e.target.value)} required className="h-8 text-xs" />
         ) : (
           admin.full_name
         )}
-      </td>
-      <td className="p-2">
+      </DataTableTd>
+      <DataTableTd>
         {editing ? (
-          <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+          <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required className="h-8 text-xs" />
         ) : (
           admin.email
         )}
-      </td>
-      <td className="p-2">
+      </DataTableTd>
+      <DataTableTd>
         {editing ? (
           <select
             value={role}
             onChange={(e) => setRole(e.target.value)}
-            className="border rounded-md p-2 w-full"
+            className="border rounded-md px-2 py-1.5 w-full text-xs"
             required
             aria-label="Pilih role admin"
           >
@@ -51,9 +52,9 @@ export default function AdminRow({ admin, updateAction, deleteAction }: AdminRow
         ) : (
           admin.role
         )}
-      </td>
-      <td className="p-2 w-[140px]">{admin.created_at}</td>
-      <td className="p-2 w-[180px]">
+      </DataTableTd>
+      <DataTableTd className="w-[140px]">{admin.created_at}</DataTableTd>
+      <DataTableTd className="w-[180px]">
         <div className="flex gap-2">
           {editing ? (
             <form
@@ -67,26 +68,24 @@ export default function AdminRow({ admin, updateAction, deleteAction }: AdminRow
               <input type="hidden" name="full_name" value={fullName} />
               <input type="hidden" name="email" value={email} />
               <input type="hidden" name="role" value={role} />
-              <Button type="submit">Simpan</Button>
-              <Button type="button" variant="outline" onClick={() => setEditing(false)}>
+              <Button type="submit" size="sm">Simpan</Button>
+              <Button type="button" size="sm" variant="outline" onClick={() => setEditing(false)}>
                 Batal
               </Button>
             </form>
           ) : (
             <>
-              <Button type="button" variant="outline" onClick={() => setEditing(true)}>
+              <Button type="button" size="sm" variant="outline" onClick={() => setEditing(true)}>
                 Edit
               </Button>
               <form action={deleteAction} onSubmit={(e) => !confirm("Hapus admin ini?") && e.preventDefault()}>
                 <input type="hidden" name="id" value={admin.id} />
-                <Button type="submit" variant="outline">Hapus</Button>
+                <Button type="submit" size="sm" variant="outline">Hapus</Button>
               </form>
             </>
           )}
         </div>
-      </td>
-    </tr>
+      </DataTableTd>
+    </DataTableRow>
   )
 }
-
-

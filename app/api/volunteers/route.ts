@@ -20,14 +20,14 @@ export async function GET(request: NextRequest) {
              OR email ILIKE ${like}
              OR COALESCE(phone_number,'') ILIKE ${like}
           ORDER BY id DESC
-          LIMIT 10
+          LIMIT 2000
         `
       } else {
         volunteers = await sql`
           SELECT id, full_name, email, phone_number as phone, created_at
           FROM volunteers
           ORDER BY id DESC
-          LIMIT 10
+          LIMIT 2000
         `
       }
       
