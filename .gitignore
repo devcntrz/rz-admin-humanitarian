@@ -1,7 +1,9 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 .DS_Store
+
 # dependencies
 /node_modules
+.pnpm-store/
 package-lock.json
 yarn.lock
 
@@ -12,7 +14,8 @@ yarn.lock
 # production
 /build
 
-# debug
+# debug / logs
+*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
@@ -29,7 +32,9 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-
 # docker
 docker-compose.*
 !docker-compose.yml.example
+
+# large generated seed dump (regenerate with pnpm db:prepare-seed)
+/drizzle/data/seed.sql
